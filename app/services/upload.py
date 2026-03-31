@@ -1,16 +1,21 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks # Added BackgroundTasks
 from app.utils.file_handler import save_uploaded_file, load_dataframe
-from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, preprocess_data
+from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, preprocess_data, get_gemini_response_unified # Updated import for unified Gemini function
 from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
 import os
 import uuid
 import pandas as pd
 from typing import Optional
 import json
+from PIL import Image # Moved from inside chat_with_image
+import io # Moved from inside chat_with_image
 
 router = APIRouter()
 
 # In-memory storage for demo (use database in production)
+# CRITICAL: This in-memory storage is NOT suitable for production.
+# It will not scale, is not multi-worker safe, and will lead to memory exhaustion.
+# Consider using Redis, a dedicated database, or persistent file storage for session data.
 STORAGE = {}
 
 def _get_data_summary(df: pd.DataFrame) -> str:
@@ -29,8 +34,48 @@ Data Summary:
 - Underutilized towers (utilization < 0.5): {underutilized_towers if underutilized_towers else 'None'}
 """
 
+def _process_uploaded_data_in_background(session_id: str, file_path: str):
+    """
+    Background task to process data and train models without blocking the upload response.
+    """
+    try:
+        from app.services.analysis import load_dataframe, compute_kpis, generate_plots, get_ai_recommendations
+        from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
+
+        df = load_dataframe(file_path)
+        if df is None:
+            return
+
+        # Generate and store data summary once to speed up Chat endpoints
+        data_summary = _get_data_summary(df)
+
+        # Compute and store analytical results
+        STORAGE[session_id].update({
+            "kpis": compute_kpis(df),
+            "plots": generate_plots(df),
+            "ai_recommendations": get_ai_recommendations(df),
+            "data_summary": data_summary
+        })
+
+        # Train and store ML models
+        if len(df) >= 2:
+            rev_model, rev_score, _ = train_revenue_model(df)
+            cost_model, cost_score, _ = train_cost_model(df)
+            clf_model, clf_acc, _ = train_classification_model(df)
+            
+            STORAGE[session_id].update({
+                "rev_model": rev_model,
+                "rev_score": rev_score,
+                "cost_model": cost_model,
+                "cost_score": cost_score,
+                "clf_model": clf_model,
+                "clf_acc": clf_acc
+            })
+    except Exception as e:
+        print(f"Error in background processing for session {session_id}: {e}")
+
 @router.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), background_tasks: BackgroundTasks = BackgroundTasks()):
     """Handle file upload, save it, and return a session ID."""
     try:
         # Save file to data directory
@@ -44,46 +89,19 @@ async def upload_file(file: UploadFile = File(...)):
         # Generate a session ID
         session_id = str(uuid.uuid4())
         
-        # Store dataframe and file path
+        # Store only file_path and chat_history initially
         STORAGE[session_id] = {
             "file_path": file_path,
-            "dataframe": df.to_dict(orient="records"),
             "chat_history": []
         }
         
-        # Compute KPIs and plots
-        kpis = compute_kpis(df)
-        plots = generate_plots(df)
+        # Add background task to process data and train models
+        background_tasks.add_task(_process_uploaded_data_in_background, session_id, file_path)
         
-        # Get AI recommendations
-        ai_recommendations = get_ai_recommendations(df)
-        
-        # Store in session
-        STORAGE[session_id]["kpis"] = kpis
-        STORAGE[session_id]["plots"] = plots
-        STORAGE[session_id]["ai_recommendations"] = ai_recommendations
-        
-        # Train ML models if enough data
-        if len(df) >= 2:
-            rev_model, rev_score, _ = train_revenue_model(df)
-            cost_model, cost_score, _ = train_cost_model(df)
-            clf_model, clf_acc, _ = train_classification_model(df)
-            
-            STORAGE[session_id]["rev_score"] = rev_score
-            STORAGE[session_id]["cost_score"] = cost_score
-            STORAGE[session_id]["clf_acc"] = clf_acc
-            STORAGE[session_id]["rev_model"] = rev_model
-            STORAGE[session_id]["cost_model"] = cost_model
-            STORAGE[session_id]["clf_model"] = clf_model
-        
+        # Return immediate response with session ID
         return {
-            "session_id": session_id, 
-            "kpis": kpis, 
-            "plots": plots,
-            "ai_recommendations": ai_recommendations,
-            "rev_score": STORAGE[session_id].get("rev_score"),
-            "cost_score": STORAGE[session_id].get("cost_score"),
-            "clf_acc": STORAGE[session_id].get("clf_acc")
+            "session_id": session_id,
+            "message": "File uploaded successfully. Data processing and model training are running in the background."
         }
     
     except Exception as e:
@@ -95,6 +113,10 @@ async def analyze(session_id: str):
     if session_id not in STORAGE:
         raise HTTPException(status_code=404, detail="Session not found")
     
+    # Check if background task has completed and results are available
+    if "kpis" not in STORAGE[session_id]:
+        raise HTTPException(status_code=202, detail="Analysis still in progress. Please try again shortly.")
+
     return {
         "kpis": STORAGE[session_id].get("kpis"),
         "plots": STORAGE[session_id].get("plots"),
@@ -103,6 +125,18 @@ async def analyze(session_id: str):
         "cost_score": STORAGE[session_id].get("cost_score"),
         "clf_acc": STORAGE[session_id].get("clf_acc")
     }
+
+# Helper to load DataFrame for endpoints that need it
+def _get_df_from_session(session_id: str) -> pd.DataFrame:
+    if session_id not in STORAGE:
+        raise HTTPException(status_code=404, detail="Session not found")
+    file_path = STORAGE[session_id].get("file_path")
+    if not file_path:
+        raise HTTPException(status_code=500, detail="File path not found for session.")
+    df = load_dataframe(file_path)
+    if df is None:
+        raise HTTPException(status_code=500, detail="Failed to load dataframe from file.")
+    return df
 
 @router.post("/predict/{session_id}")
 async def predict(
@@ -119,14 +153,19 @@ async def predict(
     model = STORAGE[session_id].get("rev_model")
     
     if model is None:
-        # If no stored model, try to train one
-        df_data = STORAGE[session_id]["dataframe"]
-        df = pd.DataFrame(df_data)
+        # If no stored model, try to train one (this is inefficient, better to wait for background task)
+        # Or, ideally, models should be loaded from persistent storage if available.
+        df = _get_df_from_session(session_id)
         model, score, _ = train_revenue_model(df)
         if model is None:
-            raise HTTPException(status_code=400, detail="Model could not be trained.")
+            raise HTTPException(status_code=400, detail="Model could not be trained or is not ready. Please wait for analysis to complete.")
+        # Optionally store the newly trained model if it wasn't ready from background task
+        STORAGE[session_id]["rev_model"] = model
     
-    pred = model.predict([[active_tenants, energy_cost, opex]])[0]
+    # It's safer to predict using a DataFrame with named columns
+    input_data = pd.DataFrame([[active_tenants, energy_cost, opex]], 
+                              columns=['Active_Tenants', 'Total_Energy_Cost', 'Total_Opex']) # Assuming these are the feature names
+    pred = model.predict(input_data)[0]
     return {"predicted_revenue": pred}
 
 @router.post("/predict_opex/{session_id}")
@@ -145,13 +184,15 @@ async def predict_opex(
     model = STORAGE[session_id].get("cost_model")
     
     if model is None:
-        df_data = STORAGE[session_id]["dataframe"]
-        df = pd.DataFrame(df_data)
+        df = _get_df_from_session(session_id)
         model, score, _ = train_cost_model(df)
         if model is None:
-            raise HTTPException(status_code=400, detail="Model could not be trained.")
+            raise HTTPException(status_code=400, detail="Model could not be trained or is not ready. Please wait for analysis to complete.")
+        STORAGE[session_id]["cost_model"] = model
     
-    pred = model.predict([[diesel_liters, electricity_kwh, maint_cost, repair_cost, staff_visits]])[0]
+    input_data = pd.DataFrame([[diesel_liters, electricity_kwh, maint_cost, repair_cost, staff_visits]],
+                              columns=['Diesel_Liters', 'Electricity_kWh', 'Maintenance_Cost', 'Repair_Cost', 'Staff_Visits'])
+    pred = model.predict(input_data)[0]
     return {"predicted_opex": pred}
 
 @router.post("/classify/{session_id}")
@@ -168,13 +209,15 @@ async def classify(
     model = STORAGE[session_id].get("clf_model")
     
     if model is None:
-        df_data = STORAGE[session_id]["dataframe"]
-        df = pd.DataFrame(df_data)
+        df = _get_df_from_session(session_id)
         model, acc, _ = train_classification_model(df)
         if model is None:
-            raise HTTPException(status_code=400, detail="Model could not be trained.")
+            raise HTTPException(status_code=400, detail="Model could not be trained or is not ready. Please wait for analysis to complete.")
+        STORAGE[session_id]["clf_model"] = model
     
-    pred = model.predict([[active_tenants, energy_cost, opex]])[0]
+    input_data = pd.DataFrame([[active_tenants, energy_cost, opex]],
+                              columns=['Active_Tenants', 'Total_Energy_Cost', 'Total_Opex'])
+    pred = model.predict(input_data)[0]
     return {"productivity_label": pred}
 
 @router.post("/chat/{session_id}")
@@ -183,13 +226,14 @@ async def chat(session_id: str, message: str = Form(...)):
     if session_id not in STORAGE:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Get stored data
-    df_data = STORAGE[session_id]["dataframe"]
-    df = pd.DataFrame(df_data)
+    # Optimized: Use pre-calculated summary if available
+    data_summary = STORAGE[session_id].get("data_summary")
+    if not data_summary:
+        # Fallback if background task isn't done
+        df = _get_df_from_session(session_id)
+        data_summary = _get_data_summary(df)
+
     chat_history = STORAGE[session_id].get("chat_history", [])
-    
-    # Get data summary using helper
-    data_summary = _get_data_summary(df)
     
     # Build conversation history
     conversation = "\n".join(chat_history[-10:])  # Last 10 messages
@@ -207,8 +251,7 @@ Now answer the user's latest question concisely and helpfully.
 """
     
     # Call Gemini API
-    from app.services.analysis import get_gemini_response
-    reply = get_gemini_response(system_prompt, message)
+    reply = get_gemini_response_unified(system_prompt, message) # Using unified Gemini function
     
     # Store in chat history
     chat_history.append(f"User: {message}")
@@ -228,8 +271,7 @@ async def chat_with_image(
         raise HTTPException(status_code=404, detail="Session not found")
     
     # Get stored data
-    df_data = STORAGE[session_id]["dataframe"]
-    df = pd.DataFrame(df_data)
+    df = _get_df_from_session(session_id) # Reload DataFrame from file path
     chat_history = STORAGE[session_id].get("chat_history", [])
     
     # Get data summary using helper
@@ -251,14 +293,11 @@ Now answer the user's question.
     # Handle image if uploaded
     image_data = None
     if image:
-        from PIL import Image
-        import io
         contents = await image.read()
         image_data = Image.open(io.BytesIO(contents))
     
     # Call Gemini API with or without image
-    from app.services.analysis import get_gemini_response_with_image
-    reply = get_gemini_response_with_image(system_prompt, message, image_data)
+    reply = get_gemini_response_unified(system_prompt, message, image_data) # Using unified Gemini function
     
     # Store in chat history
     chat_history.append(f"User: {message}" + (" [with image]" if image else ""))

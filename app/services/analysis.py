@@ -3,7 +3,17 @@ import numpy as np
 from typing import Dict, Any
 import plotly.express as px
 import plotly.graph_objects as go
+import os # Added for os.getenv
 import json
+import google.generativeai as genai
+# Removed streamlit as it's not used in a FastAPI backend context
+
+# Centralize API key configuration
+def _configure_gemini_api():
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("GEMINI_API_KEY not found. Please set it in environment variables.")
+    genai.configure(api_key=api_key)
 
 def validate_columns(df: pd.DataFrame, required_cols: list) -> bool:
     """Check if all required columns are present."""
@@ -87,6 +97,7 @@ def load_dataframe(file_path: str) -> pd.DataFrame:
             df = pd.read_csv(file_path)
         else:
             df = pd.read_excel(file_path)
+        
         # Validate required columns
         required_cols = [
             'Transaction_ID', 'Date', 'Tower_ID', 'Location', 'Transaction_Type',
@@ -100,3 +111,66 @@ def load_dataframe(file_path: str) -> pd.DataFrame:
         return df
     except Exception:
         return None
+
+def get_ai_recommendations(df: pd.DataFrame) -> str:
+    """Generate AI recommendations using Gemini."""    
+    try:
+        _configure_gemini_api()
+    except ValueError as e:
+        return f"API configuration error: {e}"
+    except Exception as e:
+        return f"Unexpected error during API configuration: {e}"
+    
+    model = genai.GenerativeModel('gemini-1.5-flash') # Model instantiation can be moved outside if it's always the same
+
+    avg_productivity = df['Productivity'].mean()
+    worst_tower = df.groupby('Tower_ID')['Productivity'].mean().idxmin()
+    highest_diesel = df.groupby('Tower_ID')['Diesel_Dependency'].mean().idxmax() # Ensure this column exists
+    underutilized = df.groupby('Tower_ID')['Utilization'].mean()
+    underutilized_towers = underutilized[underutilized < 0.5].index.tolist()
+
+    prompt = f"""
+You are a telecom operations expert. Based on the following summary data from a telecom tower dataset, provide:
+1. Cost reduction strategies
+2. Energy optimization suggestions
+3. Revenue improvement ideas
+4. Risk alerts
+
+Summary:
+- Average productivity (Revenue/(Energy Cost+OPEX)): {avg_productivity:.2f}
+- Tower with lowest average productivity: {worst_tower}
+- Tower with highest diesel dependency: {highest_diesel}
+- Underutilized towers (utilization < 0.5): {underutilized_towers if underutilized_towers else 'None'}
+
+Please give actionable recommendations.
+"""
+    try:
+        response = model.generate_content(prompt) # This is a single-turn prompt, so direct call is fine.
+        return response.text
+    except Exception as e:
+        return f"Error calling Gemini API: {e}"
+
+def get_gemini_response_unified(system_prompt: str, user_message: str, image=None) -> str:
+    """Get response from Gemini API with optional image."""
+    try:
+        _configure_gemini_api()
+    except ValueError as e:
+        return f"API configuration error: {e}"
+    except Exception as e:
+        return f"Unexpected error during API configuration: {e}"
+    
+    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # The prompt structure for Gemini can be a list of parts, which handles system/user roles implicitly.
+    parts = []
+    if system_prompt:
+        parts.append(system_prompt)
+    parts.append(f"User: {user_message}")
+    if image:
+        parts.append(image)
+    
+    try:
+        response = model.generate_content(parts)
+        return response.text
+    except Exception as e:
+        return f"Error calling Gemini API: {e}"

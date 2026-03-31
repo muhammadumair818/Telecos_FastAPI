@@ -16,34 +16,63 @@
         <div class="upload-area">
             <form id="uploadForm" enctype="multipart/form-data">
                 <input type="file" name="file" id="fileInput" accept=".csv,.xlsx" required>
-                <button type="submit">Upload</button>
+                <button type="submit">Upload & Analyze</button>
             </form>
         </div>
 
-        <div id="loading" style="display:none;">Processing...</div>
-
-        <div id="results" style="display:none;">
-            <div id="kpis"></div>
-            <div id="charts"></div>
+        <div id="loading" style="display:none; text-align:center; padding:20px;">
+            <div class="spinner"></div>
+            <p>Processing your data...</p>
         </div>
 
+        <div id="results" style="display:none;">
+            <!-- KPIs -->
+            <h2>Key Performance Indicators</h2>
+            <div id="kpis" class="kpi-grid"></div>
+            
+            <!-- AI Recommendations -->
+            <h2>🤖 AI Recommendations</h2>
+            <div id="ai-recommendations" class="recommendations"></div>
+            
+            <!-- Charts -->
+            <h2>Visualizations</h2>
+            <div id="charts"></div>
+            
+            <!-- ML Models -->
+            <h2>Machine Learning Models</h2>
+            <div id="ml-metrics"></div>
+        </div>
+
+        <!-- Prediction Section -->
         <div id="predict" style="display:none;">
-            <h3>Predict Revenue</h3>
+            <h2>🔮 Revenue Prediction</h2>
             <form id="predictForm">
-                <input type="number" id="active_tenants" placeholder="Active Tenants" value="10">
-                <input type="number" id="energy_cost" placeholder="Total Energy Cost" value="1000">
-                <input type="number" id="opex" placeholder="Total OPEX" value="2000">
-                <button type="submit">Predict</button>
+                <div class="form-group">
+                    <label>Active Tenants:</label>
+                    <input type="number" id="active_tenants" value="10" step="1">
+                </div>
+                <div class="form-group">
+                    <label>Total Energy Cost ($):</label>
+                    <input type="number" id="energy_cost" value="1000" step="100">
+                </div>
+                <div class="form-group">
+                    <label>Total OPEX ($):</label>
+                    <input type="number" id="opex" value="2000" step="100">
+                </div>
+                <button type="submit">Predict Revenue</button>
             </form>
             <div id="predictionResult"></div>
         </div>
 
+        <!-- Chat Section -->
         <div id="chat" style="display:none;">
-            <h3>🤖 AI Chat with Gemini</h3>
-            <div id="chatMessages"></div>
+            <h2>🤖 AI Chat with Gemini</h2>
+            <div id="chatMessages" class="chat-container"></div>
             <form id="chatForm">
-                <input type="text" id="chatInput" placeholder="Ask a follow-up question...">
-                <button type="submit">Send</button>
+                <div class="chat-input-group">
+                    <input type="text" id="chatInput" placeholder="Ask a follow-up question...">
+                    <button type="submit">Send</button>
+                </div>
             </form>
         </div>
     </div>
@@ -56,6 +85,10 @@
             var formData = new FormData();
             formData.append('file', $('#fileInput')[0].files[0]);
             $('#loading').show();
+            $('#results').hide();
+            $('#predict').hide();
+            $('#chat').hide();
+            
             $.ajax({
                 url: '/upload',
                 type: 'POST',
@@ -69,55 +102,80 @@
                     $('#predict').show();
                     $('#chat').show();
                     displayKpis(data.kpis);
+                    displayAIRecommendations(data.ai_recommendations);
                     displayPlots(data.plots);
+                    displayMLMetrics(data);
                 },
                 error: function(xhr) {
                     $('#loading').hide();
-                    alert('Error: ' + xhr.responseJSON.detail);
+                    alert('Error: ' + (xhr.responseJSON?.detail || 'Upload failed'));
                 }
             });
         });
 
         function displayKpis(kpis) {
-            var html = '<div class="kpi-grid">';
+            var html = '';
             for (var key in kpis) {
                 var value = kpis[key];
                 if (key === 'Avg Utilization') value = (value * 100).toFixed(2) + '%';
-                else if (typeof value === 'number') value = '$' + value.toFixed(2);
-                html += `<div class="kpi-card"><div class="kpi-title">${key}</div><div class="kpi-value">${value}</div></div>`;
+                else if (typeof value === 'number' && key.includes('Revenue')) value = '$' + value.toFixed(2);
+                else if (typeof value === 'number') value = value.toFixed(2);
+                html += `
+                    <div class="kpi-card">
+                        <div class="kpi-title">${key}</div>
+                        <div class="kpi-value">${value}</div>
+                    </div>
+                `;
             }
-            html += '</div>';
             $('#kpis').html(html);
+        }
+
+        function displayAIRecommendations(recommendations) {
+            if (recommendations) {
+                var formatted = recommendations.replace(/\n/g, '<br>');
+                $('#ai-recommendations').html(`<div class="recommendations-card">${formatted}</div>`);
+            }
         }
 
         function displayPlots(plots) {
             var html = '';
             for (var name in plots) {
-                html += `<div id="plot-${name}"></div>`;
+                html += `<div id="plot-${name}" class="plot-container"></div>`;
             }
             $('#charts').html(html);
             for (var name in plots) {
                 var fig = JSON.parse(plots[name]);
-                Plotly.newPlot(`plot-${name}`, fig.data, fig.layout);
+                Plotly.newPlot(`plot-${name}`, fig.data, fig.layout, {responsive: true});
             }
+        }
+
+        function displayMLMetrics(data) {
+            var html = '<div class="ml-metrics">';
+            if (data.rev_score) html += `<div class="metric">Revenue Model R²: ${data.rev_score.toFixed(4)}</div>`;
+            if (data.cost_score) html += `<div class="metric">Cost Model R²: ${data.cost_score.toFixed(4)}</div>`;
+            if (data.clf_acc) html += `<div class="metric">Classification Accuracy: ${(data.clf_acc * 100).toFixed(2)}%</div>`;
+            html += '</div>';
+            $('#ml-metrics').html(html);
         }
 
         $('#predictForm').on('submit', function(e) {
             e.preventDefault();
-            var data = {
-                active_tenants: $('#active_tenants').val(),
-                energy_cost: $('#energy_cost').val(),
-                opex: $('#opex').val()
-            };
+            var formData = new FormData();
+            formData.append('active_tenants', $('#active_tenants').val());
+            formData.append('energy_cost', $('#energy_cost').val());
+            formData.append('opex', $('#opex').val());
+            
             $.ajax({
                 url: `/predict/${sessionId}`,
                 type: 'POST',
-                data: data,
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function(res) {
-                    $('#predictionResult').html(`<p>Predicted Revenue: $${res.predicted_revenue.toFixed(2)}</p>`);
+                    $('#predictionResult').html(`<div class="prediction-card">Predicted Revenue: <strong>$${res.predicted_revenue.toFixed(2)}</strong></div>`);
                 },
                 error: function(xhr) {
-                    alert('Prediction error: ' + xhr.responseJSON.detail);
+                    alert('Prediction error: ' + (xhr.responseJSON?.detail || 'Unknown error'));
                 }
             });
         });
@@ -128,21 +186,27 @@
             if (!message) return;
             $('#chatInput').val('');
             appendMessage('user', message);
+            
+            var formData = new FormData();
+            formData.append('message', message);
+            
             $.ajax({
                 url: `/chat/${sessionId}`,
                 type: 'POST',
-                data: { message: message },
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function(res) {
                     appendMessage('assistant', res.reply);
                 },
                 error: function(xhr) {
-                    appendMessage('assistant', 'Error: ' + xhr.responseJSON.detail);
+                    appendMessage('assistant', 'Error: ' + (xhr.responseJSON?.detail || 'Chat failed'));
                 }
             });
         });
 
         function appendMessage(role, text) {
-            var msgDiv = `<div class="chat-message ${role}">${text}</div>`;
+            var msgDiv = `<div class="chat-message ${role}">${text.replace(/\n/g, '<br>')}</div>`;
             $('#chatMessages').append(msgDiv);
             $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
         }

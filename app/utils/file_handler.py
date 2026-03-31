@@ -2,6 +2,7 @@ import os
 import shutil
 from pathlib import Path
 from fastapi import UploadFile
+import pandas as pd
 
 UPLOAD_DIR = Path("data")
 UPLOAD_DIR.mkdir(exist_ok=True)

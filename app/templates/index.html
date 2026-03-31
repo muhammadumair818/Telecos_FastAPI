@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telco Tower Analytics</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>📡 Telco Tower Analytics</h1>
+        <p>Upload your dataset to analyze tower performance, predict KPIs, and get AI recommendations.</p>
+
+        <div class="upload-area">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" name="file" id="fileInput" accept=".csv,.xlsx" required>
+                <button type="submit">Upload</button>
+            </form>
+        </div>
+
+        <div id="loading" style="display:none;">Processing...</div>
+
+        <div id="results" style="display:none;">
+            <div id="kpis"></div>
+            <div id="charts"></div>
+        </div>
+
+        <div id="predict" style="display:none;">
+            <h3>Predict Revenue</h3>
+            <form id="predictForm">
+                <input type="number" id="active_tenants" placeholder="Active Tenants" value="10">
+                <input type="number" id="energy_cost" placeholder="Total Energy Cost" value="1000">
+                <input type="number" id="opex" placeholder="Total OPEX" value="2000">
+                <button type="submit">Predict</button>
+            </form>
+            <div id="predictionResult"></div>
+        </div>
+
+        <div id="chat" style="display:none;">
+            <h3>🤖 AI Chat with Gemini</h3>
+            <div id="chatMessages"></div>
+            <form id="chatForm">
+                <input type="text" id="chatInput" placeholder="Ask a follow-up question...">
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let sessionId = null;
+
+        $('#uploadForm').on('submit', function(e) {
+            e.preventDefault();
+            var formData = new FormData();
+            formData.append('file', $('#fileInput')[0].files[0]);
+            $('#loading').show();
+            $.ajax({
+                url: '/upload',
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(data) {
+                    sessionId = data.session_id;
+                    $('#loading').hide();
+                    $('#results').show();
+                    $('#predict').show();
+                    $('#chat').show();
+                    displayKpis(data.kpis);
+                    displayPlots(data.plots);
+                },
+                error: function(xhr) {
+                    $('#loading').hide();
+                    alert('Error: ' + xhr.responseJSON.detail);
+                }
+            });
+        });
+
+        function displayKpis(kpis) {
+            var html = '<div class="kpi-grid">';
+            for (var key in kpis) {
+                var value = kpis[key];
+                if (key === 'Avg Utilization') value = (value * 100).toFixed(2) + '%';
+                else if (typeof value === 'number') value = '$' + value.toFixed(2);
+                html += `<div class="kpi-card"><div class="kpi-title">${key}</div><div class="kpi-value">${value}</div></div>`;
+            }
+            html += '</div>';
+            $('#kpis').html(html);
+        }
+
+        function displayPlots(plots) {
+            var html = '';
+            for (var name in plots) {
+                html += `<div id="plot-${name}"></div>`;
+            }
+            $('#charts').html(html);
+            for (var name in plots) {
+                var fig = JSON.parse(plots[name]);
+                Plotly.newPlot(`plot-${name}`, fig.data, fig.layout);
+            }
+        }
+
+        $('#predictForm').on('submit', function(e) {
+            e.preventDefault();
+            var data = {
+                active_tenants: $('#active_tenants').val(),
+                energy_cost: $('#energy_cost').val(),
+                opex: $('#opex').val()
+            };
+            $.ajax({
+                url: `/predict/${sessionId}`,
+                type: 'POST',
+                data: data,
+                success: function(res) {
+                    $('#predictionResult').html(`<p>Predicted Revenue: $${res.predicted_revenue.toFixed(2)}</p>`);
+                },
+                error: function(xhr) {
+                    alert('Prediction error: ' + xhr.responseJSON.detail);
+                }
+            });
+        });
+
+        $('#chatForm').on('submit', function(e) {
+            e.preventDefault();
+            var message = $('#chatInput').val();
+            if (!message) return;
+            $('#chatInput').val('');
+            appendMessage('user', message);
+            $.ajax({
+                url: `/chat/${sessionId}`,
+                type: 'POST',
+                data: { message: message },
+                success: function(res) {
+                    appendMessage('assistant', res.reply);
+                },
+                error: function(xhr) {
+                    appendMessage('assistant', 'Error: ' + xhr.responseJSON.detail);
+                }
+            });
+        });
+
+        function appendMessage(role, text) {
+            var msgDiv = `<div class="chat-message ${role}">${text}</div>`;
+            $('#chatMessages').append(msgDiv);
+            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+        }
+    </script>
+</body>
+</html>

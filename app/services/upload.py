@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks # Added BackgroundTasks
 from app.utils.file_handler import save_uploaded_file, load_dataframe
-from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, preprocess_data, get_gemini_response_unified # Updated import for unified Gemini function
+from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, get_gemini_response_unified # Updated import for unified Gemini function
 from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
 import os
 import uuid
@@ -39,7 +39,8 @@ def _process_uploaded_data_in_background(session_id: str, file_path: str):
     Background task to process data and train models without blocking the upload response.
     """
     try:
-        from app.services.analysis import load_dataframe, compute_kpis, generate_plots, get_ai_recommendations
+        from app.utils.file_handler import load_dataframe
+        from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations
         from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
 
         df = load_dataframe(file_path)
@@ -270,12 +271,13 @@ async def chat_with_image(
     if session_id not in STORAGE:
         raise HTTPException(status_code=404, detail="Session not found")
     
-    # Get stored data
-    df = _get_df_from_session(session_id) # Reload DataFrame from file path
+    # Optimized: Use pre-calculated summary if available
+    data_summary = STORAGE[session_id].get("data_summary")
+    if not data_summary:
+        df = _get_df_from_session(session_id)
+        data_summary = _get_data_summary(df)
+
     chat_history = STORAGE[session_id].get("chat_history", [])
-    
-    # Get data summary using helper
-    data_summary = _get_data_summary(df)
     
     # Build conversation history
     conversation = "\n".join(chat_history[-10:])

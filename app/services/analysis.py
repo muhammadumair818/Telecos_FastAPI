@@ -124,8 +124,8 @@ def get_ai_recommendations(df: pd.DataFrame) -> str:
     model = genai.GenerativeModel('gemini-1.5-flash') # Model instantiation can be moved outside if it's always the same
 
     avg_productivity = df['Productivity'].mean()
-    worst_tower = df.groupby('Tower_ID')['Productivity'].mean().idxmin()
-    highest_diesel = df.groupby('Tower_ID')['Diesel_Dependency'].mean().idxmax() # Ensure this column exists
+    worst_tower = df.groupby('Tower_ID')['Productivity'].mean().idxmin() if not df.empty else "N/A"
+    highest_diesel = df.groupby('Tower_ID')['Diesel_Dependency'].mean().idxmax() if not df.empty else "N/A"
     underutilized = df.groupby('Tower_ID')['Utilization'].mean()
     underutilized_towers = underutilized[underutilized < 0.5].index.tolist()
 

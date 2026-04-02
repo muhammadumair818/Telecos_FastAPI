@@ -1,43 +1,15 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form
-<<<<<<< HEAD
-from app.utils.file_handler import save_uploaded_file
-from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, load_dataframe
-=======
 from app.utils.file_handler import save_uploaded_file, load_dataframe
 from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, preprocess_data
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
 from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
-import os
 import uuid
-from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, load_dataframe
 import pandas as pd
-<<<<<<< HEAD
-import numpy as np
-=======
-from typing import Optional
-import json
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
 
 router = APIRouter()
 
 # In-memory storage for demo (use database in production)
 STORAGE = {}
 
-<<<<<<< HEAD
-def convert_to_serializable(obj):
-    """Convert NumPy types to Python native types."""
-    if isinstance(obj, np.integer):
-        return int(obj)
-    elif isinstance(obj, np.floating):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, dict):
-        return {key: convert_to_serializable(value) for key, value in obj.items()}
-    elif isinstance(obj, (list, tuple)):
-        return [convert_to_serializable(item) for item in obj]
-    return obj
-=======
 def _get_data_summary(df: pd.DataFrame) -> str:
     """Helper to generate a consistent data summary for AI prompts."""
     avg_productivity = df['Productivity'].mean()
@@ -53,7 +25,6 @@ Data Summary:
 - Tower with highest diesel dependency: {highest_diesel}
 - Underutilized towers (utilization < 0.5): {underutilized_towers if underutilized_towers else 'None'}
 """
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
 
 @router.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -102,20 +73,6 @@ async def upload_file(file: UploadFile = File(...)):
             STORAGE[session_id]["cost_model"] = cost_model
             STORAGE[session_id]["clf_model"] = clf_model
         
-<<<<<<< HEAD
-        # Convert all values to serializable types before returning
-        response_data = {
-            "session_id": session_id, 
-            "kpis": convert_to_serializable(kpis), 
-            "plots": plots,
-            "ai_recommendations": ai_recommendations,
-            "rev_score": convert_to_serializable(STORAGE[session_id].get("rev_score")),
-            "cost_score": convert_to_serializable(STORAGE[session_id].get("cost_score")),
-            "clf_acc": convert_to_serializable(STORAGE[session_id].get("clf_acc"))
-        }
-        
-        return response_data
-=======
         return {
             "session_id": session_id, 
             "kpis": kpis, 
@@ -125,7 +82,6 @@ async def upload_file(file: UploadFile = File(...)):
             "cost_score": STORAGE[session_id].get("cost_score"),
             "clf_acc": STORAGE[session_id].get("clf_acc")
         }
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -145,68 +101,6 @@ async def analyze(session_id: str):
         "clf_acc": STORAGE[session_id].get("clf_acc")
     }
 
-<<<<<<< HEAD
-@router.post("/chat/{session_id}")
-async def chat(session_id: str, message: str = Form(...)):
-    """Chat with AI about the data."""
-    if session_id not in STORAGE:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Get stored data
-    df_data = STORAGE[session_id]["dataframe"]
-    df = pd.DataFrame(df_data)
-    chat_history = STORAGE[session_id].get("chat_history", [])
-    
-    # Prepare detailed data summary
-    avg_productivity = float(df['Productivity'].mean())
-    worst_tower = df.groupby('Tower_ID')['Productivity'].mean().idxmin()
-    highest_diesel = df.groupby('Tower_ID')['Diesel_Dependency'].mean().idxmax()
-    underutilized = df.groupby('Tower_ID')['Utilization'].mean()
-    underutilized_towers = underutilized[underutilized < 0.5].index.tolist()
-    
-    # Get tower rankings
-    top_revenue = df.groupby('Tower_ID')['Revenue'].sum().nlargest(3).index.tolist()
-    top_cost = df.groupby('Tower_ID')['Total_Opex'].sum().nlargest(3).index.tolist()
-    
-    data_summary = f"""
-TELECOM TOWER DATA SUMMARY:
-
-Overall Metrics:
-- Total Towers: {df['Tower_ID'].nunique()}
-- Total Records: {len(df)}
-- Average Productivity: {avg_productivity:.2f}
-- Average Utilization: {float(df['Utilization'].mean() * 100):.1f}%
-- Total Revenue: ${float(df['Revenue'].sum()):,.2f}
-- Total Profit: ${float(df['Profit'].sum()):,.2f}
-- Average Diesel Dependency: {float(df['Diesel_Dependency'].mean() * 100):.1f}%
-
-Top Performers:
-- Highest Revenue Towers: {', '.join(top_revenue)}
-- Highest Cost Towers: {', '.join(top_cost)}
-
-Problem Areas:
-- Lowest Productivity Tower: {worst_tower}
-- Highest Diesel Dependency: {highest_diesel}
-- Underutilized Towers: {', '.join(map(str, underutilized_towers)) if underutilized_towers else 'None'}
-
-Tower Details:
-{df.groupby('Tower_ID').agg({
-    'Revenue': 'sum',
-    'Total_Opex': 'sum',
-    'Profit': 'sum',
-    'Productivity': 'mean',
-    'Utilization': 'mean',
-    'Diesel_Dependency': 'mean'
-}).round(2).to_string()}
-"""
-    
-    system_prompt = f"""
-You are a telecom operations expert. You have access to the following tower data:
-
-{data_summary}
-
-Answer user questions based ONLY on this data. Be specific - mention tower names and numbers. If asked about something not in the data, explain what additional information would be needed.
-=======
 @router.post("/predict/{session_id}")
 async def predict(
     session_id: str,
@@ -307,7 +201,6 @@ Previous conversation:
 {conversation}
 
 Now answer the user's latest question concisely and helpfully.
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
 """
     
     # Call Gemini API
@@ -319,8 +212,6 @@ Now answer the user's latest question concisely and helpfully.
     chat_history.append(f"Assistant: {reply}")
     STORAGE[session_id]["chat_history"] = chat_history
     
-<<<<<<< HEAD
-=======
     return {"reply": reply}
 
 @router.post("/chat_with_image/{session_id}")
@@ -371,5 +262,4 @@ Now answer the user's question.
     chat_history.append(f"Assistant: {reply}")
     STORAGE[session_id]["chat_history"] = chat_history
     
->>>>>>> 45a793c2cbf6890d37bf20852a02144e23db00f0
     return {"reply": reply}

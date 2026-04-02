@@ -13,7 +13,7 @@ class KPIResponse(BaseModel):
     avg_utilization: float
 
 class PlotResponse(BaseModel):
-    cost_vs_revenue: str  # JSON string of Plotly figure
+    cost_vs_revenue: str
     energy_vs_revenue: str
     utilization_vs_revenue: str
     diesel_vs_grid: str
@@ -22,6 +22,15 @@ class PlotResponse(BaseModel):
 class AnalysisResponse(BaseModel):
     kpis: KPIResponse
     plots: PlotResponse
+    ai_recommendations: Optional[str] = None
     rev_score: Optional[float] = None
     cost_score: Optional[float] = None
     clf_acc: Optional[float] = None
+
+class PredictResponse(BaseModel):
+    predicted_revenue: Optional[float] = None
+    predicted_opex: Optional[float] = None
+    productivity_label: Optional[str] = None
+
+class ChatResponse(BaseModel):
+    reply: str

@@ -2,150 +2,750 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telco Tower Analytics</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Telco Tower Analytics | AI-Powered Telecom Intelligence</title>
+    <!-- Core Libraries -->
     <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(145deg, #f0f4ff 0%, #e9eef9 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* animated gradient overlay */
+        .glass-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 10% 20%, rgba(102, 126, 234, 0.08), rgba(118, 75, 162, 0.05));
+            z-index: -2;
+        }
+
+        .container {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 32px 28px;
+        }
+
+        /* modern header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 20px;
+            backdrop-filter: blur(2px);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .logo-icon {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 34px;
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.25);
+            transition: transform 0.2s ease;
+        }
+
+        .logo-icon:hover {
+            transform: scale(1.02);
+        }
+
+        .logo h1 {
+            font-size: 30px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #1e293b 0%, #2d3a5e 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+        }
+
+        .subtitle {
+            color: #5b6e8c;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 6px;
+        }
+
+        .badge {
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(8px);
+            padding: 10px 24px;
+            border-radius: 60px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #4c6ef5;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            box-shadow: 0 0 0 0 rgba(16,185,129,0.4);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0.7);}
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16,185,129,0);}
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16,185,129,0);}
+        }
+
+        /* upload card premium */
+        .upload-card {
+            background: rgba(255,255,255,0.96);
+            backdrop-filter: blur(4px);
+            border-radius: 40px;
+            padding: 44px 32px;
+            text-align: center;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.15);
+            margin-bottom: 48px;
+            border: 1px solid rgba(255,255,255,0.6);
+            transition: all 0.2s;
+        }
+
+        .upload-icon {
+            font-size: 56px;
+            margin-bottom: 18px;
+        }
+
+        .upload-card h3 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .file-input-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin: 28px 0 20px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 12px 32px;
+            border-radius: 60px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(100deg, #4c6ef5 0%, #7c3aed 100%);
+            color: white;
+            box-shadow: 0 8px 18px rgba(76,110,245,0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 28px rgba(76,110,245,0.4);
+        }
+
+        .btn-secondary {
+            background: #f1f5f9;
+            color: #1e293b;
+            border: 1px solid #e2e8f0;
+        }
+
+        .btn-secondary:hover {
+            background: #e6edf5;
+        }
+
+        .file-name {
+            color: #475569;
+            font-size: 14px;
+            font-weight: 500;
+            background: #f8fafc;
+            padding: 6px 16px;
+            border-radius: 40px;
+        }
+
+        /* loading */
+        .loading-container {
+            text-align: center;
+            padding: 70px 20px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 48px;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 56px;
+            height: 56px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #4c6ef5;
+            border-radius: 50%;
+            animation: spin 0.9s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* KPI cards modern */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 22px;
+        }
+
+        .kpi-item {
+            background: white;
+            border-radius: 28px;
+            padding: 20px 24px;
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            transition: all 0.25s;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03);
+            border: 1px solid #eef2ff;
+        }
+
+        .kpi-item:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 20px 30px -12px rgba(0,0,0,0.12);
+            border-color: #cddcff;
+        }
+
+        .kpi-icon {
+            width: 58px;
+            height: 58px;
+            background: linear-gradient(125deg, #eef2ff, #ffffff);
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+        }
+
+        .kpi-label {
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #5b6e8c;
+            letter-spacing: 0.4px;
+        }
+
+        .kpi-number {
+            font-size: 30px;
+            font-weight: 800;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+
+        .kpi-number.negative {
+            color: #e53e3e;
+        }
+
+        /* AI insight card */
+        .ai-card {
+            background: linear-gradient(125deg, #1f2937, #111827);
+            border-radius: 32px;
+            padding: 32px 36px;
+            color: #f3f4f6;
+            box-shadow: 0 25px 35px -12px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .ai-content {
+            line-height: 1.7;
+            font-size: 1rem;
+        }
+
+        .ai-content strong {
+            color: #a5b4fc;
+        }
+
+        /* plots */
+        .plots-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(520px, 1fr));
+            gap: 28px;
+        }
+
+        .plot-card {
+            background: white;
+            border-radius: 28px;
+            padding: 18px 20px 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            transition: all 0.2s;
+        }
+
+        .plot-title {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-left: 8px;
+            border-left: 4px solid #4c6ef5;
+        }
+
+        .plot-container {
+            width: 100%;
+            min-height: 420px;
+        }
+
+        /* ML metrics */
+        .ml-grid {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .ml-item {
+            background: white;
+            border-radius: 24px;
+            padding: 18px 26px;
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            box-shadow: 0 6px 14px rgba(0,0,0,0.03);
+            border: 1px solid #eef2ff;
+        }
+
+        .ml-label {
+            font-weight: 700;
+            color: #334155;
+        }
+
+        .ml-value {
+            font-weight: 800;
+            color: #4c6ef5;
+            font-size: 1.4rem;
+        }
+
+        /* prediction panel */
+        .prediction-card {
+            background: white;
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.05);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            min-width: 170px;
+        }
+
+        .form-group label {
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #4b5565;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            border: 1.5px solid #e2e8f0;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: #4c6ef5;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(76,110,245,0.2);
+        }
+
+        .btn-predict {
+            background: #0f172a;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 700;
+            width: 100%;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-predict:hover {
+            background: #1e293b;
+            transform: scale(0.98);
+        }
+
+        .prediction-result {
+            margin-top: 24px;
+            background: #f1f5f9;
+            border-radius: 24px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .result-shown strong {
+            font-size: 1.8rem;
+            color: #4c6ef5;
+        }
+
+        /* chat modern */
+        .chat-container {
+            background: white;
+            border-radius: 28px;
+            overflow: hidden;
+            box-shadow: 0 12px 28px rgba(0,0,0,0.08);
+        }
+
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 24px;
+            background: #fafcff;
+        }
+
+        .chat-msg {
+            display: flex;
+            gap: 14px;
+            margin-bottom: 24px;
+            animation: fadeSlide 0.25s ease;
+        }
+
+        @keyframes fadeSlide {
+            from { opacity: 0; transform: translateY(12px);}
+            to { opacity: 1; transform: translateY(0);}
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            background: #eef2ff;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .chat-msg.user .chat-avatar {
+            background: #4c6ef5;
+        }
+
+        .chat-text {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 24px;
+            line-height: 1.5;
+            font-size: 0.9rem;
+            color: #1e293b;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            max-width: 85%;
+        }
+
+        .chat-msg.user .chat-text {
+            background: #4c6ef5;
+            color: white;
+        }
+
+        .chat-form {
+            display: flex;
+            padding: 18px;
+            background: white;
+            border-top: 1px solid #edf2f7;
+            gap: 12px;
+        }
+
+        .chat-form input {
+            flex: 1;
+            padding: 14px 20px;
+            border-radius: 50px;
+            border: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        .chat-form button {
+            background: #4c6ef5;
+            border: none;
+            padding: 0 28px;
+            border-radius: 60px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+        }
+
+        @media (max-width: 780px) {
+            .container { padding: 20px 16px; }
+            .plots-grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: 1fr; }
+            .form-row { flex-direction: column; }
+        }
+
+        .section {
+            margin-bottom: 52px;
+        }
+
+        .section-header h2 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>📡 Telco Tower Analytics</h1>
-        <p>Upload your dataset to analyze tower performance, predict KPIs, and get AI recommendations.</p>
-
-        <div class="upload-area">
-            <form id="uploadForm" enctype="multipart/form-data">
-                <input type="file" name="file" id="fileInput" accept=".csv,.xlsx" required>
-                <button type="submit">Upload</button>
-            </form>
+<div class="glass-bg"></div>
+<div class="container">
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">📡</div>
+            <div>
+                <h1>Telco Tower Analytics</h1>
+                <p class="subtitle">AI-Powered Telecom Intelligence | Gemini + ML Fusion</p>
+            </div>
         </div>
-
-        <div id="loading" style="display:none;">Processing...</div>
-
-        <div id="results" style="display:none;">
-            <div id="kpis"></div>
-            <div id="charts"></div>
-        </div>
-
-        <div id="predict" style="display:none;">
-            <h3>Predict Revenue</h3>
-            <form id="predictForm">
-                <input type="number" id="active_tenants" placeholder="Active Tenants" value="10">
-                <input type="number" id="energy_cost" placeholder="Total Energy Cost" value="1000">
-                <input type="number" id="opex" placeholder="Total OPEX" value="2000">
-                <button type="submit">Predict</button>
-            </form>
-            <div id="predictionResult"></div>
-        </div>
-
-        <div id="chat" style="display:none;">
-            <h3>🤖 AI Chat with Gemini</h3>
-            <div id="chatMessages"></div>
-            <form id="chatForm">
-                <input type="text" id="chatInput" placeholder="Ask a follow-up question...">
-                <button type="submit">Send</button>
-            </form>
+        <div class="badge">
+            <span class="dot"></span>
+            Live Analytics Ready
         </div>
     </div>
 
-    <script>
-        let sessionId = null;
+    <!-- Upload Card -->
+    <div class="upload-card">
+        <div class="upload-icon">📡⚡</div>
+        <h3>Upload Telecom Tower Dataset</h3>
+        <p>Support CSV / Excel — Tower performance, energy, revenue, opex metrics</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="file-input-wrapper">
+                <input type="file" name="file" id="fileInput" accept=".csv,.xlsx" hidden>
+                <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">📂 Browse Files</button>
+                <span id="fileName" class="file-name">No file selected</span>
+            </div>
+            <button type="submit" class="btn-primary">✨ Upload & Analyze with AI ✨</button>
+        </form>
+    </div>
 
-        $('#uploadForm').on('submit', function(e) {
-            e.preventDefault();
-            var formData = new FormData();
-            formData.append('file', $('#fileInput')[0].files[0]);
-            $('#loading').show();
-            $.ajax({
-                url: '/upload',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(data) {
-                    sessionId = data.session_id;
-                    $('#loading').hide();
-                    $('#results').show();
-                    $('#predict').show();
-                    $('#chat').show();
-                    displayKpis(data.kpis);
-                    displayPlots(data.plots);
-                },
-                error: function(xhr) {
-                    $('#loading').hide();
-                    alert('Error: ' + xhr.responseJSON.detail);
-                }
-            });
-        });
+    <!-- Loading -->
+    <div id="loading" class="loading-container" style="display:none;">
+        <div class="spinner"></div>
+        <p style="font-weight:500;">🧠 AI crunching patterns & generating insights ...</p>
+    </div>
 
-        function displayKpis(kpis) {
-            var html = '<div class="kpi-grid">';
-            for (var key in kpis) {
-                var value = kpis[key];
-                if (key === 'Avg Utilization') value = (value * 100).toFixed(2) + '%';
-                else if (typeof value === 'number') value = '$' + value.toFixed(2);
-                html += `<div class="kpi-card"><div class="kpi-title">${key}</div><div class="kpi-value">${value}</div></div>`;
+    <!-- Results Panel -->
+    <div id="results" style="display:none;">
+        <div class="section"><div class="section-header"><h2>📊 Key Performance Indicators</h2><p>Derived from tower telemetry & financials</p></div><div id="kpis" class="kpi-grid"></div></div>
+        <div class="section"><div class="section-header"><h2>🤖 Gemini AI Strategic Insights</h2><p>Actionable intelligence for network optimization</p></div><div id="ai-recommendations" class="ai-card"></div></div>
+        <div class="section"><div class="section-header"><h2>📈 Interactive Visual Analytics</h2><p>Revenue drivers, energy efficiency & utilization patterns</p></div><div id="charts"></div></div>
+        <div class="section"><div class="section-header"><h2>🧠 ML Model Performance</h2><p>Regression & classification metrics on tower data</p></div><div id="ml-metrics" class="ml-grid"></div></div>
+        <div class="section"><div class="section-header"><h2>🔮 Smart Revenue Forecaster</h2><p>Predict monthly revenue from operational levers</p></div><div class="prediction-card"><form id="predictForm" class="prediction-form"><div class="form-row"><div class="form-group"><label>Active Tenants</label><input type="number" id="active_tenants" value="12" step="1"></div><div class="form-group"><label>Energy Cost ($)</label><input type="number" id="energy_cost" value="1250" step="100"></div><div class="form-group"><label>Total OPEX ($)</label><input type="number" id="opex" value="2400" step="100"></div><div class="form-group"><button type="submit" class="btn-predict">📊 Predict Revenue →</button></div></div></form><div id="predictionResult" class="prediction-result"><div class="result-shown">✨ Fill values & click predict</div></div></div></div>
+        <div class="section"><div class="section-header"><h2>💬 AI Tower Assistant</h2><p>Ask anything: anomalies, trends, cost drivers</p></div><div class="chat-container"><div id="chatMessages" class="chat-messages"><div class="chat-msg assistant"><div class="chat-avatar">🤖</div><div class="chat-text">Hello! Upload your tower data first. Then I can answer specific questions about revenue, efficiency, or predictions.</div></div></div><form id="chatForm" class="chat-form"><input type="text" id="chatInput" placeholder="e.g., Which towers have highest diesel dependency?" autocomplete="off"><button type="submit">Send</button></form></div></div>
+    </div>
+</div>
+
+<script>
+    let sessionId = null;
+
+    $('#fileInput').on('change', function(e) {
+        const fileName = e.target.files[0]?.name || 'No file chosen';
+        $('#fileName').text(fileName);
+    });
+
+    $('#uploadForm').on('submit', function(e) {
+        e.preventDefault();
+        const file = $('#fileInput')[0].files[0];
+        if (!file) { alert('Please select a CSV or Excel file'); return; }
+        const formData = new FormData();
+        formData.append('file', file);
+        $('#loading').show();
+        $('#results').hide();
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                sessionId = data.session_id;
+                $('#loading').hide();
+                $('#results').fadeIn(400);
+                displayKpis(data.kpis);
+                displayAIRecommendations(data.ai_recommendations);
+                displayPlots(data.plots);
+                displayMLMetrics(data);
+                // reset chat context
+                $('#chatMessages').html(`<div class="chat-msg assistant"><div class="chat-avatar">🤖</div><div class="chat-text">✅ Data loaded! Ask me about tower KPIs, predictions, or trends.</div></div>`);
+            },
+            error: function(xhr) {
+                $('#loading').hide();
+                let errMsg = xhr.responseJSON?.detail || 'Upload failed. Ensure columns: revenue, opex, energy_cost, active_tenants, utilization etc.';
+                alert('⚠️ ' + errMsg);
             }
-            html += '</div>';
-            $('#kpis').html(html);
-        }
-
-        function displayPlots(plots) {
-            var html = '';
-            for (var name in plots) {
-                html += `<div id="plot-${name}"></div>`;
-            }
-            $('#charts').html(html);
-            for (var name in plots) {
-                var fig = JSON.parse(plots[name]);
-                Plotly.newPlot(`plot-${name}`, fig.data, fig.layout);
-            }
-        }
-
-        $('#predictForm').on('submit', function(e) {
-            e.preventDefault();
-            var data = {
-                active_tenants: $('#active_tenants').val(),
-                energy_cost: $('#energy_cost').val(),
-                opex: $('#opex').val()
-            };
-            $.ajax({
-                url: `/predict/${sessionId}`,
-                type: 'POST',
-                data: data,
-                success: function(res) {
-                    $('#predictionResult').html(`<p>Predicted Revenue: $${res.predicted_revenue.toFixed(2)}</p>`);
-                },
-                error: function(xhr) {
-                    alert('Prediction error: ' + xhr.responseJSON.detail);
-                }
-            });
         });
+    });
 
-        $('#chatForm').on('submit', function(e) {
-            e.preventDefault();
-            var message = $('#chatInput').val();
-            if (!message) return;
-            $('#chatInput').val('');
-            appendMessage('user', message);
-            $.ajax({
-                url: `/chat/${sessionId}`,
-                type: 'POST',
-                data: { message: message },
-                success: function(res) {
-                    appendMessage('assistant', res.reply);
-                },
-                error: function(xhr) {
-                    appendMessage('assistant', 'Error: ' + xhr.responseJSON.detail);
-                }
-            });
-        });
-
-        function appendMessage(role, text) {
-            var msgDiv = `<div class="chat-message ${role}">${text}</div>`;
-            $('#chatMessages').append(msgDiv);
-            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    function displayKpis(kpis) {
+        let html = '';
+        for (let key in kpis) {
+            let val = kpis[key];
+            let icon = getIcon(key);
+            let formatted = val;
+            if (key === 'Avg Utilization' && typeof val === 'number') formatted = (val * 100).toFixed(1) + '%';
+            else if (typeof val === 'number' && (key.includes('Revenue') || key.includes('OPEX') || key.includes('Cost') || key.includes('Profit'))) {
+                let absVal = Math.abs(val);
+                let prefix = val < 0 ? '-$' : '$';
+                formatted = prefix + absVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else if (typeof val === 'number') formatted = val.toFixed(2);
+            html += `<div class="kpi-item"><div class="kpi-icon">${icon}</div><div class="kpi-info"><div class="kpi-label">${key}</div><div class="kpi-number ${String(val).includes('-') ? 'negative' : ''}">${formatted}</div></div></div>`;
         }
-    </script>
+        $('#kpis').html(html);
+    }
+
+    function getIcon(k) {
+        const map = {'Total Revenue':'💰','Total OPEX':'⚙️','Total Energy Cost':'⚡','Total Profit':'📈','Avg Productivity':'🎯','Avg Energy Efficiency':'🔋','Avg Cost Efficiency':'💸','Avg Diesel Dependency':'⛽','Avg Utilization':'📊','Avg Energy Cost per Tower':'🔌'};
+        return map[k] || '📌';
+    }
+
+    function displayAIRecommendations(rec) {
+        if (rec) {
+            let formatted = rec.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            $('#ai-recommendations').html(`<div class="ai-content">✨ ${formatted}</div>`);
+        } else $('#ai-recommendations').html('<div class="ai-content">🤖 AI insights will appear after processing.</div>');
+    }
+
+    function displayPlots(plots) {
+        let html = '<div class="plots-grid">';
+        for (let name in plots) {
+            let titleNice = name.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            html += `<div class="plot-card"><div class="plot-title">📉 ${titleNice}</div><div id="plot-${name.replace(/[^a-zA-Z0-9]/g, '_')}" class="plot-container"></div></div>`;
+        }
+        html += '</div>';
+        $('#charts').html(html);
+        for (let name in plots) {
+            const plotId = `plot-${name.replace(/[^a-zA-Z0-9]/g, '_')}`;
+            try {
+                const fig = JSON.parse(plots[name]);
+                Plotly.newPlot(plotId, fig.data, fig.layout, {responsive: true, displayModeBar: false, scrollZoom: false});
+            } catch(e) { console.warn("plot error", name); }
+        }
+    }
+
+    function displayMLMetrics(data) {
+        let html = '';
+        if (data.rev_score !== undefined) html += `<div class="ml-item"><span class="ml-label">📈 Revenue Model R²</span><span class="ml-value">${data.rev_score.toFixed(4)}</span></div>`;
+        if (data.cost_score !== undefined) html += `<div class="ml-item"><span class="ml-label">📉 Cost Efficiency R²</span><span class="ml-value">${data.cost_score.toFixed(4)}</span></div>`;
+        if (data.clf_acc !== undefined) html += `<div class="ml-item"><span class="ml-label">🏷️ High-Perf Classifier Acc</span><span class="ml-value">${(data.clf_acc * 100).toFixed(1)}%</span></div>`;
+        if (data.rmse_rev) html += `<div class="ml-item"><span class="ml-label">🎯 Revenue RMSE</span><span class="ml-value">$${data.rmse_rev.toFixed(0)}</span></div>`;
+        $('#ml-metrics').html(html || '<div class="ml-item">📊 Train more features to unlock advanced ML metrics</div>');
+    }
+
+    // Prediction with validation
+    $('#predictForm').on('submit', function(e) {
+        e.preventDefault();
+        if (!sessionId) { $('#predictionResult').html('<div class="result-error">⚠️ Upload a file first to enable prediction model</div>'); return; }
+        let active = $('#active_tenants').val();
+        let energy = $('#energy_cost').val();
+        let opex = $('#opex').val();
+        if (active === '' || energy === '' || opex === '') { alert('Fill all fields'); return; }
+        let fd = new FormData();
+        fd.append('active_tenants', active);
+        fd.append('energy_cost', energy);
+        fd.append('opex', opex);
+        $.ajax({
+            url: `/predict/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                $('#predictionResult').html(`<div class="result-shown">🎯 Estimated Monthly Revenue: <strong>$${res.predicted_revenue.toLocaleString('en-US', {minimumFractionDigits:2})}</strong><br><span style="font-size:12px;">based on ML regression model</span></div>`);
+            },
+            error: function(xhr) {
+                $('#predictionResult').html(`<div class="result-error">⚠️ Prediction error: ${xhr.responseJSON?.detail || 'Retrain or upload valid data'}</div>`);
+            }
+        });
+    });
+
+    // chat with session
+    $('#chatForm').on('submit', function(e) {
+        e.preventDefault();
+        let msg = $('#chatInput').val().trim();
+        if (!msg) return;
+        if (!sessionId) { appendMessage('assistant', '📂 Please upload tower data first to enable AI Q&A.'); $('#chatInput').val(''); return; }
+        appendMessage('user', msg);
+        $('#chatInput').val('');
+        let fd = new FormData();
+        fd.append('message', msg);
+        $.ajax({
+            url: `/chat/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(resp) {
+                appendMessage('assistant', resp.reply || "AI: Analysis complete.");
+            },
+            error: function(xhr) {
+                appendMessage('assistant', '❌ AI service error. Check backend or data schema.');
+            }
+        });
+    });
+
+    function appendMessage(role, text) {
+        let avatar = role === 'user' ? '👤' : '🤖';
+        let msgDiv = `<div class="chat-msg ${role}"><div class="chat-avatar">${avatar}</div><div class="chat-text">${escapeHtml(text).replace(/\n/g, '<br>')}</div></div>`;
+        $('#chatMessages').append(msgDiv);
+        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // ensure that if any missing backend endpoints but structure still beautiful
+    console.log("Telco Tower Analytics Dashboard Ready | AI enhanced UI");
+</script>
 </body>
 </html>

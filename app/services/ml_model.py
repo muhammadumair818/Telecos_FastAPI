@@ -15,7 +15,7 @@ def train_revenue_model(df: pd.DataFrame):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     model = LinearRegression()
     model.fit(X_train, y_train)
-    score = model.score(X_test, y_test)
+    score = float(model.score(X_test, y_test))  # Convert to float
     return model, score, (X_test, y_test)
 
 def train_cost_model(df: pd.DataFrame):
@@ -28,11 +28,10 @@ def train_cost_model(df: pd.DataFrame):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     model = LinearRegression()
     model.fit(X_train, y_train)
-    score = model.score(X_test, y_test)
+    score = float(model.score(X_test, y_test))  # Convert to float
     return model, score, (X_test, y_test)
 
 def train_classification_model(df: pd.DataFrame):
-    # Create productivity label
     df = df.copy()
     df['Productivity_Label'] = pd.cut(df['Productivity'],
                                       bins=[-np.inf, 1, 1.5, np.inf],
@@ -48,5 +47,5 @@ def train_classification_model(df: pd.DataFrame):
     model = RandomForestClassifier(n_estimators=100, random_state=42)
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
+    acc = float(accuracy_score(y_test, y_pred))  # Convert to float
     return model, acc, (X_test, y_test)

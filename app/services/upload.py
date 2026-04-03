@@ -1,6 +1,6 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, BackgroundTasks # Added BackgroundTasks
 from app.utils.file_handler import save_uploaded_file, load_dataframe
-from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, get_gemini_response_unified # Updated import for unified Gemini function
+from app.services.analysis import compute_kpis, generate_plots, get_ai_recommendations, get_chat_response, get_gemini_response_unified # Updated import for unified Gemini function
 from app.services.ml_model import train_revenue_model, train_cost_model, train_classification_model
 import os
 import uuid
@@ -32,6 +32,9 @@ Data Summary:
 - Tower with lowest average productivity: {worst_tower}
 - Tower with highest diesel dependency: {highest_diesel}
 - Underutilized towers (utilization < 0.5): {underutilized_towers if underutilized_towers else 'None'}
+- write like a human 
+- don't write like a computer 
+- don't add * # 
 """
 
 def _process_uploaded_data_in_background(session_id: str, file_path: str):
@@ -222,44 +225,51 @@ async def classify(
     return {"productivity_label": pred}
 
 @router.post("/chat/{session_id}")
-async def chat(session_id: str, message: str = Form(...)):
-    """Chat with AI about the data."""
-    if session_id not in STORAGE:
-        raise HTTPException(status_code=404, detail="Session not found")
-    
-    # Optimized: Use pre-calculated summary if available
-    data_summary = STORAGE[session_id].get("data_summary")
-    if not data_summary:
-        # Fallback if background task isn't done
-        df = _get_df_from_session(session_id)
-        data_summary = _get_data_summary(df)
-
-    chat_history = STORAGE[session_id].get("chat_history", [])
-    
-    # Build conversation history
-    conversation = "\n".join(chat_history[-10:])  # Last 10 messages
-    
-    system_prompt = f"""
-You are a telecom operations expert. You have been given the following data summary from a telecom tower dataset:
-{data_summary}
-
-Your task is to answer follow‑up questions from the user based on this data.
-
-Previous conversation:
-{conversation}
-
-Now answer the user's latest question concisely and helpfully.
+async def chat_with_data(session_id: str, message: str = Form(...)):
+    """Chat with AI about the dataset."""
+    try:
+        # Get session data
+        if session_id not in SESSION_STORAGE:
+            return {"reply": "❌ Session expired. Please upload your file again."}
+        
+        session = SESSION_STORAGE[session_id]
+        
+        # Get stored data
+        df = pd.DataFrame(session.get("dataframe", []))
+        if df.empty:
+            return {"reply": "❌ No data found. Please upload a file first."}
+        
+        analysis = session.get("analysis", {})
+        schema = analysis.get("schema", {})
+        kpis = analysis.get("kpis", {})
+        chat_history = session.get("chat_history", [])
+        
+        # Prepare data summary for AI
+        data_summary = f"""
+Dataset Summary:
+- Rows: {df.shape[0]}, Columns: {df.shape[1]}
+- Column names: {', '.join(df.columns.tolist())}
+- Numeric columns: {', '.join(schema.get('metrics', []))}
+- Categorical columns: {', '.join(schema.get('categories', []))}
+- Key metrics: {json.dumps({k: v for k, v in list(kpis.items())[:15]}, indent=2)}
+- don't give me *, # etc in the response
+- write like human 
+- don't write like a computer 
 """
+        
+        # Get AI response
+        response = get_chat_response(message, df, schema, kpis)
+        
+        # Store in chat history
+        chat_history.append({"user": message, "assistant": response})
+        session["chat_history"] = chat_history
+        SESSION_STORAGE[session_id] = session
+        
+        return {"reply": response}
     
-    # Call Gemini API
-    reply = get_gemini_response_unified(system_prompt, message) # Using unified Gemini function
-    
-    # Store in chat history
-    chat_history.append(f"User: {message}")
-    chat_history.append(f"Assistant: {reply}")
-    STORAGE[session_id]["chat_history"] = chat_history
-    
-    return {"reply": reply}
+    except Exception as e:
+        print(f"Chat error: {e}")
+        return {"reply": f"❌ Error: {str(e)}"}
 
 @router.post("/chat_with_image/{session_id}")
 async def chat_with_image(
@@ -290,6 +300,9 @@ Previous conversation:
 {conversation}
 
 Now answer the user's question.
+- write like a human 
+- don't write like a computer 
+- don't add * # 
 """
     
     # Handle image if uploaded

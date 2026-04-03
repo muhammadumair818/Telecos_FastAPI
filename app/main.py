@@ -29,8 +29,6 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 MODELS_DIR = Path("saved_models")
 MODELS_DIR.mkdir(exist_ok=True)
 
-# Mount static files and templates
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
 templates = Jinja2Templates(directory="app/templates")
 
 # Include routers

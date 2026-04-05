@@ -1,953 +1,363 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-
-<!-- <link href="style.css" rel="stylesheet">
-<link href="/static/style.css" rel="stylesheet">
-<script src="/static/script.js"></script> -->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Advanced Data Analytics | AI-Powered Intelligence</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Telco Tower Analytics | AI-Powered Intelligence</title>
+    <!-- Tailwind CSS + Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Scripts (preserved) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            border-radius: 10px;
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #555;
-        }
-        
-        /* Smooth transitions */
-        * {
-            transition: all 0.2s ease;
-        }
-        
-        /* Focus states */
-        input:focus, button:focus {
-            outline: none;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.3);
-        }
-        
-        /* Animation for loading */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .tab-content.active {
-            animation: fadeIn 0.3s ease;
-        }
-        /* Typing dots animation */
-        .typing-dots {
-            display: inline-flex;
-            gap: 4px;
-        }
-        
-        .typing-dots span {
-            width: 6px;
-            height: 6px;
-            background: #667eea;
-            border-radius: 50%;
-            display: inline-block;
-            animation: typing 1.4s infinite ease-in-out both;
-        }
-        
-        .typing-dots span:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-        
-        .typing-dots span:nth-child(2) {
-            animation-delay: -0.16s;
-        }
-        
-        @keyframes typing {
-            0%, 80%, 100% {
-                transform: scale(0.6);
-                opacity: 0.5;
-            }
-            40% {
-                transform: scale(1);
-                opacity: 1;
-            }
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        /* Custom glassmorphism & dark theme overrides */
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: radial-gradient(circle at 10% 20%, #0a0f1e, #03050b);
         }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+        .glass-card {
+            background: rgba(18, 25, 45, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(72, 187, 255, 0.2);
+            transition: all 0.2s ease;
         }
-
-        /* Header */
-        .header {
-            background: white;
-            border-radius: 20px;
-            padding: 25px 30px;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .header p {
-            color: #666;
-            margin-top: 5px;
-        }
-
-        /* Upload Area */
-        .upload-area {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            text-align: center;
-            margin-bottom: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .upload-icon {
-            font-size: 60px;
-            margin-bottom: 15px;
-        }
-
-        .file-input-wrapper {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-
-        .btn-primary:hover {
+        .glass-card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
             transform: translateY(-2px);
         }
-
-        .btn-secondary {
-            background: #f0f0f0;
-            color: #333;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .file-name {
-            color: #666;
-            font-size: 14px;
-        }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .tab-btn {
-            background: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            color: #666;
-        }
-
-        .tab-btn.active {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .tab-content {
-            display: none;
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* KPI Grid */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .kpi-card {
-            background: linear-gradient(135deg, #f5f7fa, #fff);
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            border: 1px solid #e0e0e0;
-        }
-
-        .kpi-title {
-            font-size: 14px;
-            color: #666;
-            text-transform: uppercase;
-            margin-bottom: 10px;
-        }
-
-        .kpi-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #333;
-        }
-
-        .kpi-value.negative {
-            color: #e74c3c;
-        }
-
-        .kpi-value.positive {
-            color: #27ae60;
-        }
-
-        /* Plots Grid */
-        .plots-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .plot-card {
-            background: #f9f9f9;
-            border-radius: 15px;
-            padding: 15px;
-        }
-
-        .plot-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: #333;
-        }
-
-        /* Prediction Form */
-        .prediction-form {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .form-row {
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .form-group {
-            flex: 1;
-            min-width: 150px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            color: #666;
-            margin-bottom: 5px;
-        }
-
-        .form-group input {
+        /* Ensure Plotly containers never overlap */
+        .plot-container {
             width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
+            min-height: 400px;
+            overflow-x: auto;
         }
-
-        .btn-predict {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
-
-        .prediction-result {
-            margin-top: 20px;
-            padding: 20px;
-            background: #e8f5e9;
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
             border-radius: 10px;
-            text-align: center;
-        }
-
-        /* Chat Area */
-        .chat-container {
-            background: white;
-            border-radius: 15px;
-            overflow: hidden;
-            margin-top: 15px;  /* Add this line */
-        }
-        
-        .chat-messages {
-            height: 300px;  /* Change from 400px to 300px */
-            overflow-y: auto;
-            padding: 20px;
-            background: #f9f9f9;
-        }
-
-        .chat-message {
-            margin-bottom: 15px;
-            display: flex;
-        }
-
-        .chat-message.user {
-            justify-content: flex-end;
-        }
-
-        .chat-message .content {
-            max-width: 70%;
-            padding: 10px 15px;
-            border-radius: 15px;
-        }
-
-        .chat-message.user .content {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
-
-        .chat-message.assistant .content {
-            background: white;
-            border: 1px solid #e0e0e0;
-            color: #333;
-        }
-
-        .chat-input-area {
-            display: flex;
-            padding: 15px;
-            background: white;
-            border-top: 1px solid #e0e0e0;
-            gap: 10px;
-        }
-
-        .chat-input-area input {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-
-        .chat-input-area button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-
-        /* Loading */
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 15px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Recommendations */
-        .recommendations-box {
-            background: linear-gradient(135deg, #1a1a2e, #16213e);
-            color: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-
-        .recommendations-box h3 {
-            margin-bottom: 15px;
-        }
-
-        .btn-recommend {
-            background: #ff6b6b;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-bottom: 15px;
-        }
-
-        .btn-recommend:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* Error */
-        .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
-        }
-
-        @media (max-width: 768px) {
-            .plots-grid {
-                grid-template-columns: 1fr;
-            }
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>📊 Advanced Data Analytics Platform</h1>
-            <p>AI-Powered Insights | Dynamic KPIs | ML Predictions | Smart Chat</p>
+<body class="text-gray-200 antialiased">
+
+<div class="max-w-7xl mx-auto px-4 py-6 md:px-6 lg:px-8">
+    <!-- Header with glass effect -->
+    <div class="glass-card rounded-2xl p-5 flex flex-wrap justify-between items-center mb-8">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                📡
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Telco Tower Analytics</h1>
+                <p class="text-sm text-gray-400">AI-Powered Telecom Intelligence</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 md:mt-0">
+            <span class="px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <i class="fas fa-chart-line mr-1"></i> Real-time Analytics
+            </span>
+        </div>
+    </div>
+
+    <!-- Upload Card (glass) -->
+    <div class="glass-card rounded-2xl p-6 md:p-8 text-center mb-8">
+        <div class="text-5xl mb-3">📊</div>
+        <h3 class="text-xl md:text-2xl font-bold text-white">Upload Your Telecom Data</h3>
+        <p class="text-gray-400 text-sm mt-1 mb-6">CSV / Excel — Tower performance, energy, revenue, OPEX</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="flex flex-wrap justify-center gap-4">
+                <input type="file" id="fileInput" name="file" accept=".csv,.xlsx" hidden>
+                <button type="button" class="px-5 py-2 rounded-full bg-white/10 border border-white/20 text-gray-200 hover:bg-white/20 transition flex items-center gap-2" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
+                <span id="fileName" class="px-4 py-2 rounded-full bg-black/30 text-gray-300 text-sm">No file chosen</span>
+                <button type="submit" class="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition shadow-md flex items-center gap-2">
+                    <i class="fas fa-rocket"></i> Upload & Analyze
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="text-center py-12 hidden">
+        <div class="inline-block w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        <p class="mt-3 text-gray-400">Processing your data with AI...</p>
+    </div>
+
+    <!-- Results container (tabs) -->
+    <div id="results" class="hidden">
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-3 mb-6">
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="track"><i class="fas fa-chart-simple mr-1"></i> Track</button>
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="predict"><i class="fas fa-brain mr-1"></i> Predict</button>
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="action"><i class="fas fa-comment-dots mr-1"></i> Action & AI</button>
         </div>
 
-        <!-- Upload Area -->
-        <div class="upload-area">
-            <div class="upload-icon">📁</div>
-            <h3>Upload Your Dataset</h3>
-            <p>Support CSV and Excel files - Any dataset works!</p>
-            <form id="uploadForm" enctype="multipart/form-data">
-                <div class="file-input-wrapper">
-                    <input type="file" id="fileInput" name="file" accept=".csv,.xlsx" hidden>
-                    <button type="button" class="btn-secondary" onclick="document.getElementById('fileInput').click()">📂 Choose File</button>
-                    <span id="fileName" class="file-name">No file chosen</span>
-                    <button type="submit" class="btn-primary">🚀 Analyze</button>
-                </div>
-            </form>
+        <!-- Track Tab -->
+        <div id="tab-track" class="tab-content glass-card rounded-2xl p-5 md:p-6">
+            <h3 class="text-xl font-semibold mb-4">📈 Key Performance Indicators</h3>
+            <div id="kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8"></div>
+            <h3 class="text-xl font-semibold mb-4">📊 Visual Analytics</h3>
+            <div id="plots" class="space-y-6"></div>
         </div>
 
-        <!-- Loading -->
-        <div id="loading" class="loading">
-            <div class="spinner"></div>
-            <p>Analyzing your data with AI...</p>
+        <!-- Predict Tab -->
+        <div id="tab-predict" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
+            <h3 class="text-xl font-semibold mb-4">🔮 Revenue Prediction</h3>
+            <div class="flex flex-wrap gap-4 mb-6">
+                <input type="number" id="active_tenants" placeholder="Active Tenants" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                <input type="number" id="energy_cost" placeholder="Total Energy Cost ($)" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                <input type="number" id="opex" placeholder="Total OPEX ($)" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                <button id="predictBtn" class="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition shadow-md"><i class="fas fa-chart-line"></i> Predict</button>
+            </div>
+            <div id="predictionResult" class="bg-black/30 rounded-xl p-4 text-center"></div>
+            <div id="mlScores" class="mt-5"></div>
         </div>
 
-        <!-- Results Container -->
-        <div id="resultsContainer" style="display: none;">
-            <!-- Tabs -->
-            <div class="tabs">
-                <button class="tab-btn active" data-tab="tracking">📈 Tracking & KPIs</button>
-                <button class="tab-btn" data-tab="prediction">🔮 Prediction & ML</button>
-                <button class="tab-btn" data-tab="recommendations">💡 Action & Recommendations</button>
+        <!-- Action & AI Tab -->
+        <div id="tab-action" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
+            <div class="flex flex-wrap justify-between items-center mb-5">
+                <button id="getRecommendationsBtn" class="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition shadow-md"><i class="fas fa-robot"></i> Get Gemini Recommendations</button>
             </div>
-
-            <!-- Tab 1: Tracking -->
-            <div id="tab-tracking" class="tab-content active">
-                <h2>📊 Key Performance Indicators</h2>
-                <div id="kpisContainer" class="kpi-grid"></div>
-                
-                <h2>📈 Trends & Insights</h2>
-                <div id="trendsContainer"></div>
-                
-                <h2>📉 Visualizations</h2>
-                <div id="plotsContainer" class="plots-grid"></div>
-                
-                <h2>🔗 Correlations</h2>
-                <div id="correlationsContainer"></div>
-            </div>
-
-            <!-- Tab 2: Prediction -->
-            <div id="tab-prediction" class="tab-content">
-                <h2>🤖 Machine Learning Predictions</h2>
-                <div id="mlInfoContainer"></div>
-                <div id="predictionFormContainer"></div>
-                <div id="predictionResult"></div>
-            </div>
-
-            <!-- Tab 3: Recommendations -->
-            <div id="tab-recommendations" class="tab-content">
-                <h2>💡 AI-Powered Recommendations</h2>
-                <button id="getRecommendationsBtn" class="btn-recommend">✨ Get Gemini Recommendations</button>
-                <div id="recommendationsContainer" class="recommendations-box" style="display: none;"></div>
-                
-                <h2>💬 Ask AI About Your Data</h2>
-                <div class="chat-container">
-                    <div id="chatMessages" class="chat-messages"></div>
-                    <div class="chat-input-area">
-                        <input type="text" id="chatInput" placeholder="Ask anything about your data...">
-                        <button id="sendChatBtn">Send</button>
+            <div id="recommendations" class="bg-black/30 rounded-xl p-4 hidden"></div>
+            <div class="mt-6">
+                <div class="chat-container bg-black/30 rounded-2xl overflow-hidden border border-gray-800">
+                    <div id="chatMessages" class="h-96 overflow-y-auto p-4 space-y-4"></div>
+                    <div class="flex p-3 bg-black/40 border-t border-gray-800">
+                        <input type="text" id="chatInput" placeholder="Ask about your data..." class="flex-1 px-4 py-2 rounded-full bg-black/50 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                        <button id="sendChatBtn" class="ml-3 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition"><i class="fas fa-paper-plane"></i> Send</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        let sessionId = null;
+    <!-- About Section -->
+    <div class="mt-12 glass-card rounded-2xl p-6 text-center">
+        <h3 class="text-xl font-bold mb-2"><i class="fas fa-info-circle"></i> About This Platform</h3>
+        <p class="text-gray-400 max-w-2xl mx-auto">Powered by FastAPI, Pandas, Plotly, Scikit-learn, and Google Gemini AI. Analyzes telecom tower data to deliver KPIs, trends, ML predictions, and AI-driven insights.</p>
+        <div class="flex flex-wrap justify-center gap-6 mt-6">
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-chart-line text-blue-400 mr-2"></i> Real-time KPIs</div>
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-robot text-purple-400 mr-2"></i> Gemini AI Chat</div>
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-brain text-green-400 mr-2"></i> ML Predictions</div>
+        </div>
+    </div>
+</div>
 
-        // File input handler
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const fileName = e.target.files[0]?.name || 'No file chosen';
-            document.getElementById('fileName').textContent = fileName;
+<script>
+    // -------------------- ALL EXISTING JAVASCRIPT (preserved) --------------------
+    let sessionId = null;
+    let storedPlots = null;
+    let plotsRendered = false;
+
+    function formatMarkdown(text) {
+        if (typeof marked !== 'undefined') return marked.parse(text);
+        return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        document.getElementById('fileName').textContent = e.target.files[0]?.name || 'No file chosen';
+    });
+
+    $('#uploadForm').on('submit', function(e) {
+        e.preventDefault();
+        const file = $('#fileInput')[0].files[0];
+        if (!file) { alert('Please select a file'); return; }
+        let fd = new FormData();
+        fd.append('file', file);
+        $('#loading').show();
+        $('#results').hide();
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                sessionId = data.session_id;
+                $('#loading').hide();
+                $('#results').show();
+                displayKPIs(data.kpis);
+                storedPlots = data.plots;
+                plotsRendered = false;
+                if ($('.tab-btn.active').data('tab') === 'track') {
+                    renderPlots();
+                }
+                displayMLScores(data);
+                $('#chatMessages').html('<div class="chat-message assistant flex"><div class="bg-gray-800 rounded-2xl px-4 py-2 max-w-[75%]">✅ Data loaded! Ask me about your tower data.</div></div>');
+                $('#recommendations').hide();
+            },
+            error: function(xhr) {
+                $('#loading').hide();
+                alert('Upload failed: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            }
         });
+    });
 
-        // Upload form handler
-        $('#uploadForm').on('submit', function(e) {
-            e.preventDefault();
-            const file = $('#fileInput')[0].files[0];
-            if (!file) {
-                alert('Please select a file first');
-                return;
+    function displayKPIs(kpis) {
+        let html = '';
+        for (let [k, v] of Object.entries(kpis)) {
+            let val = (typeof v === 'number') ? v.toFixed(2) : v;
+            if (k.includes('Revenue') || k.includes('Cost') || k.includes('Profit')) val = '$' + val;
+            if (k.includes('Utilization')) val = (v * 100).toFixed(1) + '%';
+            html += `<div class="bg-black/30 backdrop-blur rounded-xl p-4 text-center border border-gray-800 hover:border-blue-500/50 transition">
+                        <div class="text-xs text-gray-400 uppercase tracking-wider">${k}</div>
+                        <div class="text-2xl font-bold text-white mt-1">${val}</div>
+                    </div>`;
+        }
+        $('#kpis').html(html);
+    }
+
+    function renderPlots() {
+        if (!storedPlots) return;
+        let container = $('#plots');
+        container.empty();
+        if (Object.keys(storedPlots).length === 0) {
+            container.html('<div class="bg-black/30 rounded-xl p-4 text-center">No plots available for this dataset.</div>');
+            return;
+        }
+        for (let [name, figJson] of Object.entries(storedPlots)) {
+            let divId = 'plot_' + name.replace(/[^a-zA-Z0-9]/g, '_');
+            container.append(`<div id="${divId}" class="plot-container bg-black/30 rounded-xl p-3"></div>`);
+            try {
+                let fig = JSON.parse(figJson);
+                Plotly.newPlot(divId, fig.data, fig.layout, {responsive: true, displayModeBar: false});
+            } catch (e) {
+                console.error('Plot error:', name, e);
+                $(`#${divId}`).html('<div class="p-4 text-red-400">Plot could not be rendered.</div>');
             }
-            
-            const formData = new FormData();
-            formData.append('file', file);
-            
-            $('#loading').show();
-            $('#resultsContainer').hide();
-            
-            $.ajax({
-                url: '/upload',
-                type: 'POST',
-                data: formData,
-                processData: false,
-                contentType: false,
-                success: function(data) {
-                    sessionId = data.session_id;
-                    $('#loading').hide();
-                    $('#resultsContainer').show();
-                    
-                    // Display all results
-                    displayKPIs(data);
-                    displayTrends(data.trends);
-                    displayCorrelations(data.correlations);
-                    displayMLInfo(data);
-                    loadPlots();
-                    
-                    // Enable recommendation button
-                    $('#getRecommendationsBtn').prop('disabled', false);
-                },
-                error: function(xhr) {
-                    $('#loading').hide();
-                    alert('Error: ' + (xhr.responseJSON?.detail || 'Upload failed'));
-                }
-            });
+        }
+        plotsRendered = true;
+    }
+
+    function displayMLScores(data) {
+        let html = '<div class="bg-black/30 rounded-xl p-4"><strong class="text-blue-400">🤖 Model Performance</strong><br>';
+        if (data.rev_score) html += `Revenue Model R²: ${data.rev_score.toFixed(4)}<br>`;
+        if (data.cost_score) html += `Cost Model R²: ${data.cost_score.toFixed(4)}<br>`;
+        if (data.clf_acc) html += `Classification Accuracy: ${(data.clf_acc * 100).toFixed(1)}%<br>`;
+        html += '</div>';
+        $('#mlScores').html(html);
+    }
+
+    $('#predictBtn').click(function() {
+        let active = $('#active_tenants').val();
+        let energy = $('#energy_cost').val();
+        let opex = $('#opex').val();
+        if (!active || !energy || !opex) { alert('Fill all fields'); return; }
+        let fd = new FormData();
+        fd.append('active_tenants', active);
+        fd.append('energy_cost', energy);
+        fd.append('opex', opex);
+        $.ajax({
+            url: `/predict/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                $('#predictionResult').html(`<div class="text-lg">Predicted Revenue: <span class="text-2xl font-bold text-blue-400">$${res.predicted_revenue.toFixed(2)}</span></div>`);
+            },
+            error: function() { alert('Prediction failed'); }
         });
+    });
 
-        // Display KPIs
-        function displayKPIs(data) {
-            const kpis = data.kpis || {};
-            const totals = data.totals || {};
-            const averages = data.averages || {};
-            
-            let html = '';
-            
-            // Show totals
-            for (const [key, value] of Object.entries(totals)) {
-                const formatted = typeof value === 'number' ? formatNumber(value) : value;
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-title">Total ${key}</div>
-                        <div class="kpi-value">${formatted}</div>
-                    </div>
-                `;
-            }
-            
-            // Show averages
-            for (const [key, value] of Object.entries(averages).slice(0, 8)) {
-                const formatted = typeof value === 'number' ? value.toFixed(2) : value;
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-title">Avg ${key}</div>
-                        <div class="kpi-value">${formatted}</div>
-                    </div>
-                `;
-            }
-            
-            $('#kpisContainer').html(html || '<p>No KPIs available</p>');
-        }
-
-        // Display Trends
-        function displayTrends(trends) {
-            if (!trends || Object.keys(trends).length === 0) {
-                $('#trendsContainer').html('<p>No trend data available</p>');
-                return;
-            }
-            
-            let html = '<div class="kpi-grid">';
-            for (const [metric, data] of Object.entries(trends)) {
-                const directionIcon = data.direction === 'up' ? '📈' : (data.direction === 'down' ? '📉' : '➡️');
-                const changeClass = data.change >= 0 ? 'positive' : 'negative';
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-title">${directionIcon} ${metric} Trend</div>
-                        <div class="kpi-value ${changeClass}">${data.percent_change > 0 ? '+' : ''}${data.percent_change.toFixed(1)}%</div>
-                        <div style="font-size: 12px; color: #666;">from ${formatNumber(data.first)} to ${formatNumber(data.last)}</div>
-                    </div>
-                `;
-            }
-            html += '</div>';
-            $('#trendsContainer').html(html);
-        }
-
-        // Display Correlations
-        function displayCorrelations(correlations) {
-            if (!correlations || !correlations.strongest || !correlations.strongest.col1) {
-                $('#correlationsContainer').html('<p>No strong correlations found</p>');
-                return;
-            }
-            
-            const s = correlations.strongest;
-            const strength = Math.abs(s.value);
-            let strengthText = '';
-            if (strength > 0.7) strengthText = 'Strong';
-            else if (strength > 0.5) strengthText = 'Moderate';
-            else strengthText = 'Weak';
-            
-            $('#correlationsContainer').html(`
-                <div class="kpi-card">
-                    <div class="kpi-title">🔗 Strongest Correlation</div>
-                    <div class="kpi-value">${s.col1} ↔ ${s.col2}</div>
-                    <div>${strength} correlation: ${s.value.toFixed(3)}</div>
-                </div>
-            `);
-        }
-
-        // Load Plots
-        function loadPlots() {
-            $.ajax({
-                url: `/plots/${sessionId}`,
-                type: 'GET',
-                success: function(data) {
-                    displayPlots(data.plots);
-                },
-                error: function(xhr) {
-                    $('#plotsContainer').html('<p>Error loading plots</p>');
-                }
-            });
-        }
-
-        function displayPlots(plots) {
-            if (!plots || Object.keys(plots).length === 0) {
-                $('#plotsContainer').html('<p>No plots available</p>');
-                return;
-            }
-            
-            let html = '';
-            for (const [name, plotJson] of Object.entries(plots)) {
-                const plotId = `plot_${Date.now()}_${Math.random()}`;
-                html += `
-                    <div class="plot-card">
-                        <div class="plot-title">${name.replace(/_/g, ' ').toUpperCase()}</div>
-                        <div id="${plotId}"></div>
-                    </div>
-                `;
-                setTimeout(() => {
-                    try {
-                        const fig = JSON.parse(plotJson);
-                        Plotly.newPlot(plotId, fig.data, fig.layout, {responsive: true});
-                    } catch(e) {
-                        console.error('Plot error:', e);
-                    }
-                }, 100);
-            }
-            $('#plotsContainer').html(html);
-        }
-
-        // Display ML Info
-        function displayMLInfo(data) {
-            if (!data.ml_available) {
-                $('#mlInfoContainer').html('<p>⚠️ Not enough data for ML predictions. Need at least 10 rows and numeric columns.</p>');
-                $('#predictionFormContainer').html('');
-                return;
-            }
-            
-            let html = `
-                <div class="kpi-card">
-                    <div class="kpi-title">🎯 Target Variable</div>
-                    <div class="kpi-value">${data.ml_target || 'Auto-detected'}</div>
-                </div>
-            `;
-            
-            if (data.ml_regression_score) {
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-title">📊 Model R² Score</div>
-                        <div class="kpi-value ${data.ml_regression_score > 0.7 ? 'positive' : ''}">${data.ml_regression_score.toFixed(4)}</div>
-                    </div>
-                `;
-            }
-            
-            if (data.ml_classification_acc) {
-                html += `
-                    <div class="kpi-card">
-                        <div class="kpi-title">✅ Classification Accuracy</div>
-                        <div class="kpi-value">${(data.ml_classification_acc * 100).toFixed(1)}%</div>
-                    </div>
-                `;
-            }
-            
-            $('#mlInfoContainer').html(html);
-            
-            // Build prediction form
-            $.ajax({
-                url: `/ml/info/${sessionId}`,
-                type: 'GET',
-                success: function(mlData) {
-                    buildPredictionForm(mlData);
-                }
-            });
-        }
-
-        function buildPredictionForm(mlData) {
-            const features = mlData.features_used || [];
-            if (features.length === 0) {
-                $('#predictionFormContainer').html('<p>No features available for prediction</p>');
-                return;
-            }
-            
-            let html = '<form id="predictionForm" class="prediction-form">';
-            html += '<div class="form-row">';
-            features.slice(0, 6).forEach(feature => {
-                html += `
-                    <div class="form-group">
-                        <label>${feature}</label>
-                        <input type="number" id="input_${feature}" placeholder="Enter value" step="any">
-                    </div>
-                `;
-            });
-            html += '</div>';
-            html += '<button type="submit" class="btn-predict">🔮 Make Prediction</button>';
-            html += '</form>';
-            
-            $('#predictionFormContainer').html(html);
-            
-            $('#predictionForm').on('submit', function(e) {
-                e.preventDefault();
-                makePrediction();
-            });
-        }
-
-        function makePrediction() {
-            const features = [];
-            $('.form-group input').each(function() {
-                if ($(this).val()) {
-                    features.push(parseFloat($(this).val()));
-                }
-            });
-            
-            const inputValues = {};
-            $('.form-group').each(function(idx) {
-                const label = $(this).find('label').text();
-                const value = $(this).find('input').val();
-                if (value) {
-                    inputValues[label] = parseFloat(value);
-                }
-            });
-            
-            $.ajax({
-                url: `/predict/${sessionId}`,
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({inputs: inputValues}),
-                success: function(data) {
-                    if (data.error) {
-                        $('#predictionResult').html(`<div class="error-message">Error: ${data.error}</div>`);
-                    } else {
-                        $('#predictionResult').html(`
-                            <div class="prediction-result">
-                                <strong>Predicted ${data.target}:</strong>
-                                <div style="font-size: 32px; margin-top: 10px;">${formatNumber(data.prediction)}</div>
-                            </div>
-                        `);
-                    }
-                },
-                error: function(xhr) {
-                    $('#predictionResult').html('<div class="error-message">Prediction failed</div>');
-                }
-            });
-        }
-
-        // Get Recommendations
-        $('#getRecommendationsBtn').on('click', function() {
-            const btn = $(this);
-            btn.prop('disabled', true).text('⏳ Generating...');
-            
-            $.ajax({
-                url: `/recommend/${sessionId}`,
-                type: 'POST',
-                success: function(data) {
-                    $('#recommendationsContainer').html(`
-                        <h3>🤖 AI Recommendations (Gemini)</h3>
-                        <div style="white-space: pre-wrap; line-height: 1.6;">${data.recommendations}</div>
-                    `).show();
-                    btn.prop('disabled', false).text('✨ Get Gemini Recommendations');
-                },
-                error: function(xhr) {
-                    $('#recommendationsContainer').html(`
-                        <div class="error-message">Error getting recommendations: ${xhr.responseJSON?.detail || 'Unknown error'}</div>
-                    `).show();
-                    btn.prop('disabled', false).text('✨ Get Gemini Recommendations');
-                }
-            });
+    $('#getRecommendationsBtn').click(function() {
+        if (!sessionId) { alert('Please upload data first'); return; }
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        $.ajax({
+            url: `/recommend/${sessionId}`,
+            type: 'POST',
+            success: function(res) {
+                let html = res.recommendations;
+                if (typeof marked !== 'undefined') html = marked.parse(html);
+                $('#recommendations').html(`<div class="prose prose-invert max-w-none text-gray-300">${html}</div>`).show();
+                $(this).prop('disabled', false).html('<i class="fas fa-robot"></i> Get Gemini Recommendations');
+            }.bind(this),
+            error: function() {
+                alert('Failed to get recommendations');
+                $(this).prop('disabled', false).html('<i class="fas fa-robot"></i> Get Gemini Recommendations');
+            }.bind(this)
         });
+    });
 
-        // Chat functionality
-        $('#sendChatBtn').on('click', sendMessage);
-        $('#chatInput').on('keypress', function(e) {
-            if (e.key === 'Enter') sendMessage();
+    function addChatMessage(role, text) {
+        let formatted = formatMarkdown(text);
+        let alignClass = role === 'user' ? 'justify-end' : 'justify-start';
+        let bgClass = role === 'user' ? 'bg-blue-600' : 'bg-gray-800';
+        let msgDiv = `<div class="chat-message flex ${alignClass} mb-4">
+                        <div class="${bgClass} rounded-2xl px-4 py-2 max-w-[75%]">${formatted}</div>
+                      </div>`;
+        $('#chatMessages').append(msgDiv);
+        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    }
+
+    function addLoadingSpinner() {
+        $('#chatSpinner').remove();
+        let spinnerDiv = `<div id="chatSpinner" class="chat-message flex justify-start mb-4">
+                            <div class="bg-gray-800 rounded-2xl px-4 py-2"><i class="fas fa-spinner fa-spin"></i> Thinking...</div>
+                          </div>`;
+        $('#chatMessages').append(spinnerDiv);
+        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    }
+
+    function removeLoadingSpinner() {
+        $('#chatSpinner').remove();
+    }
+
+    $('#sendChatBtn').click(function() {
+        let msg = $('#chatInput').val().trim();
+        if (!msg) return;
+        if (!sessionId) { addChatMessage('assistant', 'Please upload data first.'); return; }
+        addChatMessage('user', msg);
+        $('#chatInput').val('');
+        addLoadingSpinner();
+        let fd = new FormData();
+        fd.append('message', msg);
+        $.ajax({
+            url: `/chat/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            timeout: 60000,
+            success: function(res) {
+                removeLoadingSpinner();
+                addChatMessage('assistant', res.reply);
+            },
+            error: function(xhr) {
+                removeLoadingSpinner();
+                let errMsg = xhr.status === 408 ? 'Request timeout. Try again.' : 'Error: Could not reach AI service.';
+                addChatMessage('assistant', errMsg);
+            }
         });
+    });
 
-        function sendMessage() {
-           const message = $('#chatInput').val().trim();
-           if (!message) return;
-                    
-           addChatMessage('user', message);
-           $('#chatInput').val('');
-                    
-           // Add loading indicator
-           addLoadingIndicator();
-                    
-           const formData = new FormData();
-           formData.append('message', message);
-                    
-           $.ajax({
-               url: `/chat/${sessionId}`,
-               type: 'POST',
-               data: formData,
-               processData: false,
-               contentType: false,
-               success: function(data) {
-                   removeLoadingIndicator();
-                   // Handle async marked parsing
-                   if (typeof marked !== 'undefined') {
-                       marked.parse(data.reply, function(err, parsedHtml) {
-                           if (!err && parsedHtml) {
-                               addChatMessage('assistant', parsedHtml);
-                           } else {
-                               addChatMessage('assistant', data.reply);
-                           }
-                       });
-                   } else {
-                       addChatMessage('assistant', data.reply);
-                   }
-               },
-               error: function(xhr) {
-                   removeLoadingIndicator();
-                   addChatMessage('assistant', '❌ Error: ' + (xhr.responseJSON?.detail || 'Chat failed'));
-               }
-           });
-        }
-        function addLoadingIndicator() {
-            const loadingDiv = $(`
-                <div class="chat-message assistant" id="loadingIndicator">
-                    <div class="content">
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <div class="typing-dots">
-                                <span>.</span><span>.</span><span>.</span>
-                            </div>
-                            <span style="font-size: 12px; color: #666;">AI is thinking...</span>
-                        </div>
-                    </div>
-                </div>
-            `);
-            $('#chatMessages').append(loadingDiv);
-            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-        }
+    $('#chatInput').keypress(function(e) { if (e.which === 13) $('#sendChatBtn').click(); });
 
-        function removeLoadingIndicator() {
-            $('#loadingIndicator').remove();
+    // Tab switching
+    $('.tab-btn').click(function() {
+        let tab = $(this).data('tab');
+        $('.tab-btn').removeClass('bg-blue-600/30 text-white').addClass('bg-white/5 text-gray-300');
+        $(this).addClass('bg-blue-600/30 text-white');
+        $('.tab-content').addClass('hidden');
+        $(`#tab-${tab}`).removeClass('hidden');
+        if (tab === 'track' && storedPlots && !plotsRendered) {
+            setTimeout(renderPlots, 50);
         }
-        function addChatMessage(role, text) {
-            const messageDiv = $(`
-                <div class="chat-message ${role}">
-                    <div class="content">${escapeHtml(text).replace(/\n/g, '<br>')}</div>
-                </div>
-            `);
-            $('#chatMessages').append(messageDiv);
-            $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
-        }
+    });
 
-        // Tab switching
-        $('.tab-btn').on('click', function() {
-            const tabId = $(this).data('tab');
-            $('.tab-btn').removeClass('active');
-            $(this).addClass('active');
-            $('.tab-content').removeClass('active');
-            $(`#tab-${tabId}`).addClass('active');
-        });
-
-        // Helper functions
-        function formatNumber(num) {
-            if (typeof num !== 'number') return num;
-            if (Math.abs(num) > 1000000) return '$' + (num / 1000000).toFixed(2) + 'M';
-            if (Math.abs(num) > 1000) return '$' + (num / 1000).toFixed(2) + 'K';
-            if (num % 1 !== 0) return '$' + num.toFixed(2);
-            return '$' + num.toLocaleString();
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/[&<>]/g, function(m) {
-                if (m === '&') return '&amp;';
-                if (m === '<') return '&lt;';
-                if (m === '>') return '&gt;';
-                return m;
-            });
-        }
-    </script>
+    // Initialize active tab style
+    $('.tab-btn[data-tab="track"]').addClass('bg-blue-600/30 text-white');
+</script>
 </body>
 </html>

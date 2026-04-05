@@ -1,19 +1,39 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
-from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import upload
-import os
-from pathlib import Path
 
-# Create FastAPI app
-app = FastAPI(
-    title="Advanced Data Analytics Platform",
-    description="AI-Powered Data Analytics with Dynamic ML and Gemini Integration",
-    version="2.0.0"
+
+import uuid
+import pandas as pd
+import os
+
+# Import your analysis functions
+from .analysis import (
+    load_data_from_bytes,
+    preprocess_data,
+    compute_kpis,
+    generate_all_plots,
+    train_revenue_model,
+    train_cost_model,
+    train_classification_model,
+    get_ai_recommendations,
+    get_chat_response
 )
 
-# Configure CORS
+# ---------------------------
+# INIT APP
+# ---------------------------
+app = FastAPI(title="Telco Tower Analytics")
+
+# ---------------------------
+# GLOBAL SESSION STORE (FIXED)
+# ---------------------------
+sessions = {}
+
+# ---------------------------
+# CORS
+# ---------------------------
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,57 +42,132 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Ensure directories exist
-UPLOAD_DIR = Path("data")
-UPLOAD_DIR.mkdir(exist_ok=True)
+# ---------------------------
+# PATH SETUP (ROBUST)
+# ---------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-MODELS_DIR = Path("saved_models")
-MODELS_DIR.mkdir(exist_ok=True)
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
-templates = Jinja2Templates(directory="app/templates")
 
-# Include routers
-app.include_router(upload.router)
+# ---------------------------
+# HELPER
+# ---------------------------
+def get_session(sid: str):
+    if sid not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return sessions[sid]
 
-# ============================================
-# ROOT ENDPOINT
-# ============================================
-
+# ---------------------------
+# ROOT (HTML PAGE)
+# ---------------------------
 @app.get("/")
 async def home(request: Request):
-    """Render the main dashboard page."""
     return templates.TemplateResponse("index.html", {"request": request})
 
-# ============================================
-# HEALTH CHECK ENDPOINT
-# ============================================
+# ---------------------------
+# UPLOAD + ANALYSIS
+# ---------------------------
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
 
-@app.get("/health")
-async def health_check():
-    """Health check endpoint."""
-    return {
-        "status": "healthy",
-        "version": "2.0.0",
-        "upload_dir": str(UPLOAD_DIR),
-        "models_dir": str(MODELS_DIR)
-    }
+        df = load_data_from_bytes(contents, file.filename)
+        df_clean = preprocess_data(df)
 
-# ============================================
-# APP INFO ENDPOINT
-# ============================================
+        kpis = compute_kpis(df_clean)
+        plots = generate_all_plots(df_clean)
 
-@app.get("/info")
-async def app_info():
-    """Get application information."""
-    return {
-        "name": "Advanced Data Analytics Platform",
-        "version": "2.0.0",
-        "features": [
-            "Dynamic dataset analysis",
-            "Automatic KPI calculation",
-            "Interactive visualizations",
-            "ML model training & predictions",
-            "AI-powered recommendations (Gemini)",
-            "Intelligent chat assistant"
-        ]
-    }
+        # ML models
+        rev_model, rev_score, _ = train_revenue_model(df_clean)
+        cost_model, cost_score, _ = train_cost_model(df_clean)
+        clf_model, clf_acc, _ = train_classification_model(df_clean)
+
+        session_id = str(uuid.uuid4())
+
+        sessions[session_id] = {
+            "dataframe": df_clean.to_dict(orient="records"),
+            "rev_model": rev_model,
+            "cost_model": cost_model,
+            "clf_model": clf_model,
+            "rev_score": rev_score,
+            "cost_score": cost_score,
+            "clf_acc": clf_acc
+        }
+
+        return {
+            "session_id": session_id,
+            "kpis": kpis,
+            "plots": plots,
+            "rev_score": rev_score,
+            "cost_score": cost_score,
+            "clf_acc": clf_acc
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
+
+# ---------------------------
+# PREDICTION
+# ---------------------------
+@app.post("/predict/{session_id}")
+async def predict_revenue(
+    session_id: str,
+    active_tenants: float = Form(...),
+    energy_cost: float = Form(...),
+    opex: float = Form(...)
+):
+    sess = get_session(session_id)
+
+    model = sess.get("rev_model")
+    if model is None:
+        raise HTTPException(status_code=400, detail="Revenue model not trained")
+
+    try:
+        pred = model.predict([[active_tenants, energy_cost, opex]])[0]
+        return {"predicted_revenue": float(pred)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------
+# RECOMMENDATIONS (AI)
+# ---------------------------
+@app.post("/recommend/{session_id}")
+async def recommend(session_id: str):
+    sess = get_session(session_id)
+    df = pd.DataFrame(sess["dataframe"])
+
+    try:
+        rec = get_ai_recommendations(df)
+        return {"recommendations": rec}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------
+# CHAT
+# ---------------------------
+@app.post("/chat/{session_id}")
+async def chat(session_id: str, message: str = Form(...)):
+    sess = get_session(session_id)
+    df = pd.DataFrame(sess["dataframe"])
+
+    try:
+        reply = get_chat_response(message, df)
+        return {"reply": reply}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------
+# GET PLOTS AGAIN
+# ---------------------------
+@app.get("/plots/{session_id}")
+async def get_plots(session_id: str):
+    sess = get_session(session_id)
+    df = pd.DataFrame(sess["dataframe"])
+
+    try:
+        plots = generate_all_plots(df)
+        return {"plots": plots}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

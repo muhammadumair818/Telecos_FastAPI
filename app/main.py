@@ -9,7 +9,7 @@ import pandas as pd
 import os
 
 # Import your analysis functions
-from .analysis import (
+from analysis import (
     load_data_from_bytes,
     preprocess_data,
     compute_kpis,
@@ -20,6 +20,7 @@ from .analysis import (
     get_ai_recommendations,
     get_chat_response
 )
+
 
 # ---------------------------
 # INIT APP

@@ -191,9 +191,6 @@ def train_classification_model(df):
     acc = accuracy_score(y_test, y_pred)
     return model, acc, (X_test, y_test)
 
-# ---------------------------
-# AI / Gemini functions
-# ---------------------------
 def get_gemini_api_key():
     return os.getenv("GEMINI_API_KEY")
 

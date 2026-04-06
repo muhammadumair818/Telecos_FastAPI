@@ -2,14 +2,12 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-
-
 import uuid
 import pandas as pd
 import os
 
 # Import your analysis functions
-from app.analysis import (
+from .analysis import (
     load_data_from_bytes,
     preprocess_data,
     compute_kpis,
@@ -21,14 +19,15 @@ from app.analysis import (
     get_chat_response
 )
 
-
 # ---------------------------
-# INIT APP
+# INIT APP & PATH SETUP
 # ---------------------------
 app = FastAPI(title="Telco Tower Analytics")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # ---------------------------
-# GLOBAL SESSION STORE (FIXED)
+# GLOBAL SESSION STORE
 # ---------------------------
 sessions = {}
 
@@ -44,15 +43,7 @@ app.add_middleware(
 )
 
 # ---------------------------
-# PATH SETUP (ROBUST)
-# ---------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-
-templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
-
-# ---------------------------
-# HELPER
+# HELPERS
 # ---------------------------
 def get_session(sid: str):
     if sid not in sessions:
@@ -64,6 +55,7 @@ def get_session(sid: str):
 # ---------------------------
 @app.get("/")
 async def home(request: Request):
+    # Standard way to render template with request context
     return templates.TemplateResponse("index.html", {"request": request})
 
 # ---------------------------
@@ -73,20 +65,18 @@ async def home(request: Request):
 async def upload_file(file: UploadFile = File(...)):
     try:
         contents = await file.read()
-
         df = load_data_from_bytes(contents, file.filename)
         df_clean = preprocess_data(df)
 
         kpis = compute_kpis(df_clean)
         plots = generate_all_plots(df_clean)
 
-        # ML models
+        # Train all 3 ML models
         rev_model, rev_score, _ = train_revenue_model(df_clean)
         cost_model, cost_score, _ = train_cost_model(df_clean)
         clf_model, clf_acc, _ = train_classification_model(df_clean)
 
         session_id = str(uuid.uuid4())
-
         sessions[session_id] = {
             "dataframe": df_clean.to_dict(orient="records"),
             "rev_model": rev_model,
@@ -105,14 +95,13 @@ async def upload_file(file: UploadFile = File(...)):
             "cost_score": cost_score,
             "clf_acc": clf_acc
         }
-
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 # ---------------------------
-# PREDICTION
+# 1. REVENUE PREDICTION
 # ---------------------------
-@app.post("/predict/{session_id}")
+@app.post("/predict_revenue/{session_id}")
 async def predict_revenue(
     session_id: str,
     active_tenants: float = Form(...),
@@ -120,53 +109,88 @@ async def predict_revenue(
     opex: float = Form(...)
 ):
     sess = get_session(session_id)
-
     model = sess.get("rev_model")
     if model is None:
         raise HTTPException(status_code=400, detail="Revenue model not trained")
-
+    
     try:
         pred = model.predict([[active_tenants, energy_cost, opex]])[0]
-        return {"predicted_revenue": float(pred)}
+        return {"prediction": float(pred)}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # ---------------------------
-# RECOMMENDATIONS (AI)
+# 2. COST PREDICTION
+# ---------------------------
+@app.post("/predict_cost/{session_id}")
+async def predict_cost(
+    session_id: str,
+    diesel: float = Form(...),
+    kwh: float = Form(...),
+    maint: float = Form(...),
+    repair: float = Form(0),
+    visits: float = Form(0)
+):
+    sess = get_session(session_id)
+    model = sess.get("cost_model")
+    if model is None:
+        raise HTTPException(status_code=400, detail="Cost model not trained")
+    
+    try:
+        # Features: Diesel_Liters, Electricity_kWh, Maintenance_Cost, Repair_Cost, Staff_Visits
+        pred = model.predict([[diesel, kwh, maint, repair, visits]])[0]
+        return {"prediction": float(pred)}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------
+# 3. PRODUCTIVITY CLASSIFICATION
+# ---------------------------
+@app.post("/predict_class/{session_id}")
+async def predict_class(
+    session_id: str,
+    active_tenants: float = Form(...),
+    energy_cost: float = Form(...),
+    opex: float = Form(...)
+):
+    sess = get_session(session_id)
+    model = sess.get("clf_model")
+    if model is None:
+        raise HTTPException(status_code=400, detail="Classification model not trained")
+    
+    try:
+        pred = model.predict([[active_tenants, energy_cost, opex]])[0]
+        return {"prediction": str(pred)} # Returns 'Low', 'Medium', or 'High'
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ---------------------------
+# AI RECOMMENDATIONS & CHAT
 # ---------------------------
 @app.post("/recommend/{session_id}")
 async def recommend(session_id: str):
     sess = get_session(session_id)
     df = pd.DataFrame(sess["dataframe"])
-
     try:
         rec = get_ai_recommendations(df)
         return {"recommendations": rec}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# CHAT
-# ---------------------------
 @app.post("/chat/{session_id}")
 async def chat(session_id: str, message: str = Form(...)):
     sess = get_session(session_id)
     df = pd.DataFrame(sess["dataframe"])
-
     try:
         reply = get_chat_response(message, df)
         return {"reply": reply}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ---------------------------
-# GET PLOTS AGAIN
-# ---------------------------
 @app.get("/plots/{session_id}")
 async def get_plots(session_id: str):
     sess = get_session(session_id)
     df = pd.DataFrame(sess["dataframe"])
-
     try:
         plots = generate_all_plots(df)
         return {"plots": plots}

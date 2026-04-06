@@ -1,12 +1,11 @@
 fastapi
 uvicorn
+jinja2
+python-multipart
 pandas
 numpy
 plotly
 scikit-learn
-google-generativeai
-python-multipart
-jinja2
+google-genai
 python-dotenv
-pillow
 openpyxl

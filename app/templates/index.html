@@ -112,17 +112,89 @@
         </div>
 
         <!-- Predict Tab -->
-        <div id="tab-predict" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
-            <h3 class="text-xl font-semibold mb-4">🔮 Revenue Prediction</h3>
-            <div class="flex flex-wrap gap-4 mb-6">
-                <input type="number" id="active_tenants" placeholder="Active Tenants" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
-                <input type="number" id="energy_cost" placeholder="Total Energy Cost ($)" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
-                <input type="number" id="opex" placeholder="Total OPEX ($)" class="flex-1 min-w-[150px] px-4 py-2 rounded-full bg-black/40 border border-gray-700 focus:border-blue-500 outline-none text-white">
-                <button id="predictBtn" class="px-6 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition shadow-md"><i class="fas fa-chart-line"></i> Predict</button>
-            </div>
-            <div id="predictionResult" class="bg-black/30 rounded-xl p-4 text-center"></div>
-            <div id="mlScores" class="mt-5"></div>
+        <div id="tab-predict" class="tab-content glass-card rounded-3xl p-6 hidden">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+        <div class="p-3 bg-blue-600/20 rounded-2xl text-blue-400 shadow-inner">
+            <i class="fas fa-brain text-2xl"></i>
         </div>
+        <div>
+            <h3 class="text-2xl font-black text-white tracking-tight">AI Predictive Modeling</h3>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-widest">Multi-Model Operational Forecasting</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- 1. REVENUE MODEL -->
+        <div class="bg-black/40 border border-blue-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-blue-500/20 rounded-lg text-blue-400 text-xs font-bold uppercase tracking-tighter">Linear Regression</span>
+                    <i class="fas fa-sack-dollar text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Revenue Forecast</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="rev_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                    <input type="number" id="rev_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                    <input type="number" id="rev_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+            <button id="btnRev" class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Revenue</button>
+            <div id="resRev" class="text-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 hidden">
+                <p class="text-[10px] text-blue-400 font-bold uppercase mb-1">Expected Revenue</p>
+                <div class="text-2xl font-black text-white" id="valRev">$0.00</div>
+            </div>
+        </div>
+
+        <!-- 2. COST MODEL -->
+        <div class="bg-black/40 border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-purple-500/20 rounded-lg text-purple-400 text-xs font-bold uppercase tracking-tighter">OPEX Forecasting</span>
+                    <i class="fas fa-file-invoice-dollar text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Cost Prediction</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="cost_diesel" placeholder="Diesel Liters" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                    <input type="number" id="cost_kwh" placeholder="Electricity (kWh)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                    <input type="number" id="cost_maint" placeholder="Maintenance Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                </div>
+            </div>
+            <button id="btnCost" class="w-full py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Cost</button>
+            <div id="resCost" class="text-center p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 hidden">
+                <p class="text-[10px] text-purple-400 font-bold uppercase mb-1">Total OPEX Forecast</p>
+                <div class="text-2xl font-black text-white" id="valCost">$0.00</div>
+            </div>
+        </div>
+
+        <!-- 3. CLASSIFICATION MODEL -->
+        <div class="bg-black/40 border border-green-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-green-500/20 rounded-lg text-green-400 text-xs font-bold uppercase tracking-tighter">Random Forest</span>
+                    <i class="fas fa-shield-virus text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Productivity Label</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="clf_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                    <input type="number" id="clf_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                    <input type="number" id="clf_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                </div>
+            </div>
+            <button id="btnClf" class="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Classify Asset</button>
+            <div id="resClf" class="text-center p-4 bg-green-500/10 rounded-2xl border border-green-500/20 hidden">
+                <p class="text-[10px] text-green-400 font-bold uppercase mb-1">Performance Category</p>
+                <div class="text-2xl font-black text-white" id="valClf">-</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Model Health Scores Section -->
+    <div id="mlScores" class="mt-10 pt-6 border-t border-white/5"></div>
+</div>
+
 
         <!-- Action & AI Tab -->
         <div id="tab-action" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
@@ -155,6 +227,71 @@
 </div>
 
 <script>
+
+    // Helper for Formatting
+const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+// 1. Revenue Prediction
+$('#btnRev').click(function() {
+    let fd = new FormData();
+    fd.append('active_tenants', $('#rev_tenants').val());
+    fd.append('energy_cost', $('#rev_energy').val());
+    fd.append('opex', $('#rev_opex').val());
+    
+    $.ajax({
+        url: `/predict/${sessionId}`,
+        type: 'POST', data: fd, processData: false, contentType: false,
+        success: (res) => {
+            $('#resRev').fadeIn().removeClass('hidden');
+            $('#valRev').text(fmt.format(res.predicted_revenue));
+        }
+    });
+});
+
+// 2. Cost Prediction (Requires separate Backend Endpoint - if defined)
+// Note: If you don't have /predict_cost/ endpoint, you'll need to add it to FastAPI.
+$('#btnCost').click(function() {
+    alert("Connect this to your train_cost_model output in FastAPI!");
+    // Logic similar to Revenue Prediction
+});
+
+// 3. Classification
+$('#btnClf').click(function() {
+    alert("Connect this to your train_classification_model in FastAPI!");
+    // Logic similar to Revenue Prediction
+});
+
+
+
+
+async function predict(type) {
+    let url, fd = new FormData();
+    if (type === 'revenue') {
+        url = `/predict_revenue/${sessionId}`;
+        fd.append('tenants', $('#rev_t').val());
+        fd.append('energy', $('#rev_e').val());
+        fd.append('opex', $('#rev_o').val());
+    } else if (type === 'cost') {
+        url = `/predict_cost/${sessionId}`;
+        fd.append('diesel', $('#cost_d').val());
+        fd.append('kwh', $('#cost_k').val());
+        fd.append('maint', $('#cost_m').val());
+        fd.append('repair', 0); // Default values for missing inputs
+        fd.append('visits', 0);
+    } else {
+        url = `/predict_class/${sessionId}`;
+        fd.append('tenants', $('#clf_t').val());
+        fd.append('energy', $('#clf_e').val());
+        fd.append('opex', $('#clf_o').val());
+    }
+
+    const res = await $.ajax({ url: url, type: 'POST', data: fd, processData: false, contentType: false });
+    
+    if (type === 'revenue') $('#res_rev').text('$' + res.prediction.toFixed(2));
+    else if (type === 'cost') $('#res_cost').text('$' + res.prediction.toFixed(2));
+    else $('#res_clf').text(res.prediction);
+}
+
     // -------------------- ALL EXISTING JAVASCRIPT (preserved) --------------------
     let sessionId = null;
     let storedPlots = null;

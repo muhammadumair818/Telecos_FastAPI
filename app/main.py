@@ -1,20 +1,23 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request, Query
 from fastapi.responses import JSONResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import uuid
 import pandas as pd
 import os
+from typing import Optional
 
-# Import your analysis functions
+# Import the NEW analysis functions (factory cost analytics)
 from .analysis import (
     load_data_from_bytes,
     preprocess_data,
     compute_kpis,
     generate_all_plots,
-    train_revenue_model,
-    train_cost_model,
-    train_classification_model,
+    train_forecasting_model,
+    train_cost_driver_model,
+    detect_anomalies,
+    get_future_forecast_kpis,
     get_ai_recommendations,
     get_chat_response
 )
@@ -22,10 +25,10 @@ from .analysis import (
 # ---------------------------
 # INIT APP & PATH SETUP
 # ---------------------------
-app = FastAPI(title="Telco Tower Analytics")
+app = FastAPI(title="Factory Cost Analytics", version="2.0.0")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
-
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 # ---------------------------
 # GLOBAL SESSION STORE
 # ---------------------------
@@ -55,11 +58,10 @@ def get_session(sid: str):
 # ---------------------------
 @app.get("/")
 async def home(request: Request):
-    # Standard way to render template with request context
     return templates.TemplateResponse("index.html", {"request": request})
 
 # ---------------------------
-# UPLOAD + ANALYSIS
+# UPLOAD + BASIC ANALYSIS
 # ---------------------------
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
@@ -69,100 +71,95 @@ async def upload_file(file: UploadFile = File(...)):
         df_clean = preprocess_data(df)
 
         kpis = compute_kpis(df_clean)
-        plots = generate_all_plots(df_clean)
+        # Default frequency = daily for plots; frontend can request different freq later
+        plots = generate_all_plots(df_clean, freq='D')
 
-        # Train all 3 ML models
-        rev_model, rev_score, _ = train_revenue_model(df_clean)
-        cost_model, cost_score, _ = train_cost_model(df_clean)
-        clf_model, clf_acc, _ = train_classification_model(df_clean)
+        # Train ML models (forecasting, cost drivers, anomalies)
+        forecast_model, forecast_test, future_dates, future_pred = train_forecasting_model(df_clean, horizon=30)
+        driver_model, driver_r2, driver_importance = train_cost_driver_model(df_clean)
+        anomaly_score, df_with_anomalies = detect_anomalies(df_clean)
+        future_kpis = get_future_forecast_kpis(df_clean, horizon=30)
 
         session_id = str(uuid.uuid4())
         sessions[session_id] = {
             "dataframe": df_clean.to_dict(orient="records"),
-            "rev_model": rev_model,
-            "cost_model": cost_model,
-            "clf_model": clf_model,
-            "rev_score": rev_score,
-            "cost_score": cost_score,
-            "clf_acc": clf_acc
+            "forecast_model": forecast_model,
+            "driver_model": driver_model,
+            "anomaly_score": anomaly_score,
+            "future_kpis": future_kpis,
+            "driver_importance": driver_importance,
+            "future_dates": [d.isoformat() for d in future_dates] if future_dates else [],
+            "future_pred": future_pred.tolist() if future_pred is not None else []
         }
 
         return {
             "session_id": session_id,
             "kpis": kpis,
             "plots": plots,
-            "rev_score": rev_score,
-            "cost_score": cost_score,
-            "clf_acc": clf_acc
+            "future_kpis": future_kpis,
+            "driver_importance": driver_importance,
+            "anomaly_score": anomaly_score
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 # ---------------------------
-# 1. REVENUE PREDICTION
+# PLOTS (with frequency parameter)
 # ---------------------------
-@app.post("/predict_revenue/{session_id}")
-async def predict_revenue(
-    session_id: str,
-    active_tenants: float = Form(...),
-    energy_cost: float = Form(...),
-    opex: float = Form(...)
-):
+@app.get("/plots/{session_id}")
+async def get_plots(session_id: str, freq: str = Query('D', regex='^(D|W|M)$')):
     sess = get_session(session_id)
-    model = sess.get("rev_model")
-    if model is None:
-        raise HTTPException(status_code=400, detail="Revenue model not trained")
-    
-    try:
-        pred = model.predict([[active_tenants, energy_cost, opex]])[0]
-        return {"prediction": float(pred)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    df = pd.DataFrame(sess["dataframe"])
+    plots = generate_all_plots(df, freq=freq)
+    return {"plots": plots}
 
 # ---------------------------
-# 2. COST PREDICTION
+# FORECAST (next N days)
 # ---------------------------
-@app.post("/predict_cost/{session_id}")
-async def predict_cost(
-    session_id: str,
-    diesel: float = Form(...),
-    kwh: float = Form(...),
-    maint: float = Form(...),
-    repair: float = Form(0),
-    visits: float = Form(0)
-):
+@app.post("/forecast/{session_id}")
+async def forecast(session_id: str, horizon: int = Form(30)):
     sess = get_session(session_id)
-    model = sess.get("cost_model")
-    if model is None:
-        raise HTTPException(status_code=400, detail="Cost model not trained")
-    
-    try:
-        # Features: Diesel_Liters, Electricity_kWh, Maintenance_Cost, Repair_Cost, Staff_Visits
-        pred = model.predict([[diesel, kwh, maint, repair, visits]])[0]
-        return {"prediction": float(pred)}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    df = pd.DataFrame(sess["dataframe"])
+    model, test_data, future_dates, future_pred = train_forecasting_model(df, horizon=horizon)
+    if future_pred is None:
+        raise HTTPException(400, "Cannot generate forecast – insufficient data")
+    return {
+        "future_dates": [d.isoformat() for d in future_dates],
+        "future_pred": future_pred.tolist(),
+        "total_next_month": sum(future_pred)
+    }
 
 # ---------------------------
-# 3. PRODUCTIVITY CLASSIFICATION
+# COST DRIVER ANALYSIS
 # ---------------------------
-@app.post("/predict_class/{session_id}")
-async def predict_class(
-    session_id: str,
-    active_tenants: float = Form(...),
-    energy_cost: float = Form(...),
-    opex: float = Form(...)
-):
+@app.get("/cost_drivers/{session_id}")
+async def cost_drivers(session_id: str):
     sess = get_session(session_id)
-    model = sess.get("clf_model")
-    if model is None:
-        raise HTTPException(status_code=400, detail="Classification model not trained")
-    
-    try:
-        pred = model.predict([[active_tenants, energy_cost, opex]])[0]
-        return {"prediction": str(pred)} # Returns 'Low', 'Medium', or 'High'
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    importance = sess.get("driver_importance")
+    if not importance:
+        raise HTTPException(400, "Cost driver model not trained")
+    return {"importance": importance}
+
+# ---------------------------
+# ANOMALY DETECTION
+# ---------------------------
+@app.get("/anomalies/{session_id}")
+async def anomalies(session_id: str):
+    sess = get_session(session_id)
+    df = pd.DataFrame(sess["dataframe"])
+    score, df_anom = detect_anomalies(df)
+    # Return only rows marked as anomaly (optional)
+    anomalies_list = df_anom[df_anom['Anomaly'] == True][['Date', 'Total_OpEx']].to_dict(orient='records')
+    return {"anomaly_score": score, "anomalies": anomalies_list}
+
+# ---------------------------
+# FUTURE KPIs (summary cards)
+# ---------------------------
+@app.get("/future_kpis/{session_id}")
+async def future_kpis(session_id: str):
+    sess = get_session(session_id)
+    kpis = sess.get("future_kpis", {})
+    return kpis
 
 # ---------------------------
 # AI RECOMMENDATIONS & CHAT
@@ -187,12 +184,26 @@ async def chat(session_id: str, message: str = Form(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/plots/{session_id}")
-async def get_plots(session_id: str):
+# ---------------------------
+# WHAT-IF SCENARIO (energy price rise)
+# ---------------------------
+@app.post("/whatif/{session_id}")
+async def what_if(session_id: str, energy_price_increase_pct: float = Form(10)):
     sess = get_session(session_id)
     df = pd.DataFrame(sess["dataframe"])
-    try:
-        plots = generate_all_plots(df)
-        return {"plots": plots}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    # Simple what-if: increase Energy_Type_1 and Energy_Type_2 costs by given percent
+    df_whatif = df.copy()
+    for col in ['Energy_Type_1', 'Energy_Type_2']:
+        if col in df_whatif.columns:
+            df_whatif[col] = df_whatif[col] * (1 + energy_price_increase_pct / 100)
+    # Recalculate Total_OpEx
+    df_whatif['Total_OpEx'] = df_whatif[['HR_Cost', 'Operation_Cost', 'Admin_Cost', 'Other_Cost']].sum(axis=1) + df_whatif[['Energy_Type_1', 'Energy_Type_2']].sum(axis=1)
+    total_new_opex = df_whatif['Total_OpEx'].sum()
+    original_opex = df['Total_OpEx'].sum()
+    increase = total_new_opex - original_opex
+    return {
+        "original_total_opex": original_opex,
+        "new_total_opex": total_new_opex,
+        "absolute_increase": increase,
+        "percent_increase": (increase / original_opex * 100) if original_opex != 0 else 0
+    }

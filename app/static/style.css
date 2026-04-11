@@ -1,0 +1,33 @@
+/* Custom glassmorphism & dark theme overrides */
+body {
+    font-family: 'Inter', sans-serif;
+    background: radial-gradient(circle at 10% 20%, #0a0f1e, #03050b);
+}
+.glass-card {
+    background: rgba(18, 25, 45, 0.65);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(72, 187, 255, 0.2);
+    transition: all 0.2s ease;
+}
+.glass-card:hover {
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: translateY(-2px);
+}
+/* Ensure Plotly containers never overlap */
+.plot-container {
+    width: 100%;
+    min-height: 400px;
+    overflow-x: auto;
+}
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #1e293b;
+}
+::-webkit-scrollbar-thumb {
+    background: #3b82f6;
+    border-radius: 10px;
+}

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Telco Tower Analytics | AI-Powered Intelligence</title>
+    <!-- Tailwind CSS + Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Scripts (preserved) -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        /* Custom glassmorphism & dark theme overrides */
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at 10% 20%, #0a0f1e, #03050b);
+        }
+        .glass-card {
+            background: rgba(18, 25, 45, 0.65);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(72, 187, 255, 0.2);
+            transition: all 0.2s ease;
+        }
+        .glass-card:hover {
+            border-color: rgba(59, 130, 246, 0.5);
+            transform: translateY(-2px);
+        }
+        /* Ensure Plotly containers never overlap */
+        .plot-container {
+            width: 100%;
+            min-height: 400px;
+            overflow-x: auto;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-200 antialiased">
+
+<div class="max-w-7xl mx-auto px-4 py-6 md:px-6 lg:px-8">
+    <!-- Header with glass effect -->
+    <div class="glass-card rounded-2xl p-5 flex flex-wrap justify-between items-center mb-8">
+        <div class="flex items-center gap-4">
+            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl shadow-lg">
+                📡
+            </div>
+            <div>
+                <h1 class="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-white to-blue-200 bg-clip-text text-transparent">Telco Tower Analytics</h1>
+                <p class="text-sm text-gray-400">AI-Powered Telecom Intelligence</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 mt-2 md:mt-0">
+            <span class="px-4 py-1.5 rounded-full text-xs font-medium bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                <i class="fas fa-chart-line mr-1"></i> Real-time Analytics
+            </span>
+        </div>
+    </div>
+
+    <!-- Upload Card (glass) -->
+    <div class="glass-card rounded-2xl p-6 md:p-8 text-center mb-8">
+        <div class="text-5xl mb-3">📊</div>
+        <h3 class="text-xl md:text-2xl font-bold text-white">Upload Your Telecom Data</h3>
+        <p class="text-gray-400 text-sm mt-1 mb-6">CSV / Excel — Tower performance, energy, revenue, OPEX</p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="flex flex-wrap justify-center gap-4">
+                <input type="file" id="fileInput" name="file" accept=".csv,.xlsx" hidden>
+                <button type="button" class="px-5 py-2 rounded-full bg-white/10 border border-white/20 text-gray-200 hover:bg-white/20 transition flex items-center gap-2" onclick="document.getElementById('fileInput').click()">
+                    <i class="fas fa-folder-open"></i> Browse Files
+                </button>
+                <span id="fileName" class="px-4 py-2 rounded-full bg-black/30 text-gray-300 text-sm">No file chosen</span>
+                <button type="submit" class="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition shadow-md flex items-center gap-2">
+                    <i class="fas fa-rocket"></i> Upload & Analyze
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Loading indicator -->
+    <div id="loading" class="text-center py-12 hidden">
+        <div class="inline-block w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+        <p class="mt-3 text-gray-400">Processing your data with AI...</p>
+    </div>
+
+    <!-- Results container (tabs) -->
+    <div id="results" class="hidden">
+        <!-- Tabs -->
+        <div class="flex flex-wrap gap-3 mb-6">
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="track"><i class="fas fa-chart-simple mr-1"></i> Track</button>
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="predict"><i class="fas fa-brain mr-1"></i> Predict</button>
+            <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="action"><i class="fas fa-comment-dots mr-1"></i> Action & AI</button>
+        </div>
+
+        <!-- Track Tab -->
+        <div id="tab-track" class="tab-content glass-card rounded-2xl p-5 md:p-6">
+            <h3 class="text-xl font-semibold mb-4">📈 Key Performance Indicators</h3>
+            <div id="kpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8"></div>
+            <h3 class="text-xl font-semibold mb-4">📊 Visual Analytics</h3>
+            <div id="plots" class="space-y-6"></div>
+        </div>
+
+        <!-- Predict Tab -->
+        <div id="tab-predict" class="tab-content glass-card rounded-3xl p-6 hidden">
+    <!-- Header -->
+    <div class="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+        <div class="p-3 bg-blue-600/20 rounded-2xl text-blue-400 shadow-inner">
+            <i class="fas fa-brain text-2xl"></i>
+        </div>
+        <div>
+            <h3 class="text-2xl font-black text-white tracking-tight">AI Predictive Modeling</h3>
+            <p class="text-xs text-gray-500 font-medium uppercase tracking-widest">Multi-Model Operational Forecasting</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- 1. REVENUE MODEL -->
+        <div class="bg-black/40 border border-blue-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-blue-500/20 rounded-lg text-blue-400 text-xs font-bold uppercase tracking-tighter">Linear Regression</span>
+                    <i class="fas fa-sack-dollar text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Revenue Forecast</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="rev_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                    <input type="number" id="rev_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                    <input type="number" id="rev_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                </div>
+            </div>
+            <button id="btnRev" class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Revenue</button>
+            <div id="resRev" class="text-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 hidden">
+                <p class="text-[10px] text-blue-400 font-bold uppercase mb-1">Expected Revenue</p>
+                <div class="text-2xl font-black text-white" id="valRev">$0.00</div>
+            </div>
+        </div>
+
+        <!-- 2. COST MODEL -->
+        <div class="bg-black/40 border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-purple-500/20 rounded-lg text-purple-400 text-xs font-bold uppercase tracking-tighter">OPEX Forecasting</span>
+                    <i class="fas fa-file-invoice-dollar text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Cost Prediction</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="cost_diesel" placeholder="Diesel Liters" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                    <input type="number" id="cost_kwh" placeholder="Electricity (kWh)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                    <input type="number" id="cost_maint" placeholder="Maintenance Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                </div>
+            </div>
+            <button id="btnCost" class="w-full py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Cost</button>
+            <div id="resCost" class="text-center p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 hidden">
+                <p class="text-[10px] text-purple-400 font-bold uppercase mb-1">Total OPEX Forecast</p>
+                <div class="text-2xl font-black text-white" id="valCost">$0.00</div>
+            </div>
+        </div>
+
+        <!-- 3. CLASSIFICATION MODEL -->
+        <div class="bg-black/40 border border-green-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-start mb-6">
+                    <span class="p-2 bg-green-500/20 rounded-lg text-green-400 text-xs font-bold uppercase tracking-tighter">Random Forest</span>
+                    <i class="fas fa-shield-virus text-gray-700 text-xl"></i>
+                </div>
+                <h4 class="text-lg font-bold text-white mb-4">Productivity Label</h4>
+                <div class="space-y-3 mb-6">
+                    <input type="number" id="clf_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                    <input type="number" id="clf_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                    <input type="number" id="clf_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                </div>
+            </div>
+            <button id="btnClf" class="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Classify Asset</button>
+            <div id="resClf" class="text-center p-4 bg-green-500/10 rounded-2xl border border-green-500/20 hidden">
+                <p class="text-[10px] text-green-400 font-bold uppercase mb-1">Performance Category</p>
+                <div class="text-2xl font-black text-white" id="valClf">-</div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Model Health Scores Section -->
+    <div id="mlScores" class="mt-10 pt-6 border-t border-white/5"></div>
+</div>
+
+
+        <!-- Action & AI Tab -->
+        <div id="tab-action" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
+            <div class="flex flex-wrap justify-between items-center mb-5">
+                <button id="getRecommendationsBtn" class="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition shadow-md"><i class="fas fa-robot"></i> Get Gemini Recommendations</button>
+            </div>
+            <div id="recommendations" class="bg-black/30 rounded-xl p-4 hidden"></div>
+            <div class="mt-6">
+                <div class="chat-container bg-black/30 rounded-2xl overflow-hidden border border-gray-800">
+                    <div id="chatMessages" class="h-96 overflow-y-auto p-4 space-y-4"></div>
+                    <div class="flex p-3 bg-black/40 border-t border-gray-800">
+                        <input type="text" id="chatInput" placeholder="Ask about your data..." class="flex-1 px-4 py-2 rounded-full bg-black/50 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                        <button id="sendChatBtn" class="ml-3 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition"><i class="fas fa-paper-plane"></i> Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Section -->
+    <div class="mt-12 glass-card rounded-2xl p-6 text-center">
+        <h3 class="text-xl font-bold mb-2"><i class="fas fa-info-circle"></i> About This Platform</h3>
+        <p class="text-gray-400 max-w-2xl mx-auto">Powered by FastAPI, Pandas, Plotly, Scikit-learn, and Google Gemini AI. Analyzes telecom tower data to deliver KPIs, trends, ML predictions, and AI-driven insights.</p>
+        <div class="flex flex-wrap justify-center gap-6 mt-6">
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-chart-line text-blue-400 mr-2"></i> Real-time KPIs</div>
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-robot text-purple-400 mr-2"></i> Gemini AI Chat</div>
+            <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-brain text-green-400 mr-2"></i> ML Predictions</div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    // Helper for Formatting
+const fmt = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+
+// 1. Revenue Prediction
+$('#btnRev').click(function() {
+    let fd = new FormData();
+    fd.append('active_tenants', $('#rev_tenants').val());
+    fd.append('energy_cost', $('#rev_energy').val());
+    fd.append('opex', $('#rev_opex').val());
+    
+    $.ajax({
+        url: `/predict/${sessionId}`,
+        type: 'POST', data: fd, processData: false, contentType: false,
+        success: (res) => {
+            $('#resRev').fadeIn().removeClass('hidden');
+            $('#valRev').text(fmt.format(res.predicted_revenue));
+        }
+    });
+});
+
+// 2. Cost Prediction (Requires separate Backend Endpoint - if defined)
+// Note: If you don't have /predict_cost/ endpoint, you'll need to add it to FastAPI.
+$('#btnCost').click(function() {
+    alert("Connect this to your train_cost_model output in FastAPI!");
+    // Logic similar to Revenue Prediction
+});
+
+// 3. Classification
+$('#btnClf').click(function() {
+    alert("Connect this to your train_classification_model in FastAPI!");
+    // Logic similar to Revenue Prediction
+});
+
+
+
+
+async function predict(type) {
+    let url, fd = new FormData();
+    if (type === 'revenue') {
+        url = `/predict_revenue/${sessionId}`;
+        fd.append('tenants', $('#rev_t').val());
+        fd.append('energy', $('#rev_e').val());
+        fd.append('opex', $('#rev_o').val());
+    } else if (type === 'cost') {
+        url = `/predict_cost/${sessionId}`;
+        fd.append('diesel', $('#cost_d').val());
+        fd.append('kwh', $('#cost_k').val());
+        fd.append('maint', $('#cost_m').val());
+        fd.append('repair', 0); // Default values for missing inputs
+        fd.append('visits', 0);
+    } else {
+        url = `/predict_class/${sessionId}`;
+        fd.append('tenants', $('#clf_t').val());
+        fd.append('energy', $('#clf_e').val());
+        fd.append('opex', $('#clf_o').val());
+    }
+
+    const res = await $.ajax({ url: url, type: 'POST', data: fd, processData: false, contentType: false });
+    
+    if (type === 'revenue') $('#res_rev').text('$' + res.prediction.toFixed(2));
+    else if (type === 'cost') $('#res_cost').text('$' + res.prediction.toFixed(2));
+    else $('#res_clf').text(res.prediction);
+}
+
+    // -------------------- ALL EXISTING JAVASCRIPT (preserved) --------------------
+    let sessionId = null;
+    let storedPlots = null;
+    let plotsRendered = false;
+
+    function formatMarkdown(text) {
+        if (typeof marked !== 'undefined') return marked.parse(text);
+        return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    }
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        document.getElementById('fileName').textContent = e.target.files[0]?.name || 'No file chosen';
+    });
+
+    $('#uploadForm').on('submit', function(e) {
+        e.preventDefault();
+        const file = $('#fileInput')[0].files[0];
+        if (!file) { alert('Please select a file'); return; }
+        let fd = new FormData();
+        fd.append('file', file);
+        $('#loading').show();
+        $('#results').hide();
+        $.ajax({
+            url: '/upload',
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(data) {
+                sessionId = data.session_id;
+                $('#loading').hide();
+                $('#results').show();
+                displayKPIs(data.kpis);
+                storedPlots = data.plots;
+                plotsRendered = false;
+                if ($('.tab-btn.active').data('tab') === 'track') {
+                    renderPlots();
+                }
+                displayMLScores(data);
+                $('#chatMessages').html('<div class="chat-message assistant flex"><div class="bg-gray-800 rounded-2xl px-4 py-2 max-w-[75%]">✅ Data loaded! Ask me about your tower data.</div></div>');
+                $('#recommendations').hide();
+            },
+            error: function(xhr) {
+                $('#loading').hide();
+                alert('Upload failed: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+            }
+        });
+    });
+
+    function displayKPIs(kpis) {
+        let html = '';
+        for (let [k, v] of Object.entries(kpis)) {
+            let val = (typeof v === 'number') ? v.toFixed(2) : v;
+            if (k.includes('Revenue') || k.includes('Cost') || k.includes('Profit')) val = '$' + val;
+            if (k.includes('Utilization')) val = (v * 100).toFixed(1) + '%';
+            html += `<div class="bg-black/30 backdrop-blur rounded-xl p-4 text-center border border-gray-800 hover:border-blue-500/50 transition">
+                        <div class="text-xs text-gray-400 uppercase tracking-wider">${k}</div>
+                        <div class="text-2xl font-bold text-white mt-1">${val}</div>
+                    </div>`;
+        }
+        $('#kpis').html(html);
+    }
+
+    function renderPlots() {
+        if (!storedPlots) return;
+        let container = $('#plots');
+        container.empty();
+        if (Object.keys(storedPlots).length === 0) {
+            container.html('<div class="bg-black/30 rounded-xl p-4 text-center">No plots available for this dataset.</div>');
+            return;
+        }
+        for (let [name, figJson] of Object.entries(storedPlots)) {
+            let divId = 'plot_' + name.replace(/[^a-zA-Z0-9]/g, '_');
+            container.append(`<div id="${divId}" class="plot-container bg-black/30 rounded-xl p-3"></div>`);
+            try {
+                let fig = JSON.parse(figJson);
+                Plotly.newPlot(divId, fig.data, fig.layout, {responsive: true, displayModeBar: false});
+            } catch (e) {
+                console.error('Plot error:', name, e);
+                $(`#${divId}`).html('<div class="p-4 text-red-400">Plot could not be rendered.</div>');
+            }
+        }
+        plotsRendered = true;
+    }
+
+    function displayMLScores(data) {
+        let html = '<div class="bg-black/30 rounded-xl p-4"><strong class="text-blue-400">🤖 Model Performance</strong><br>';
+        if (data.rev_score) html += `Revenue Model R²: ${data.rev_score.toFixed(4)}<br>`;
+        if (data.cost_score) html += `Cost Model R²: ${data.cost_score.toFixed(4)}<br>`;
+        if (data.clf_acc) html += `Classification Accuracy: ${(data.clf_acc * 100).toFixed(1)}%<br>`;
+        html += '</div>';
+        $('#mlScores').html(html);
+    }
+
+    $('#predictBtn').click(function() {
+        let active = $('#active_tenants').val();
+        let energy = $('#energy_cost').val();
+        let opex = $('#opex').val();
+        if (!active || !energy || !opex) { alert('Fill all fields'); return; }
+        let fd = new FormData();
+        fd.append('active_tenants', active);
+        fd.append('energy_cost', energy);
+        fd.append('opex', opex);
+        $.ajax({
+            url: `/predict/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                $('#predictionResult').html(`<div class="text-lg">Predicted Revenue: <span class="text-2xl font-bold text-blue-400">$${res.predicted_revenue.toFixed(2)}</span></div>`);
+            },
+            error: function() { alert('Prediction failed'); }
+        });
+    });
+
+    $('#getRecommendationsBtn').click(function() {
+        if (!sessionId) { alert('Please upload data first'); return; }
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
+        $.ajax({
+            url: `/recommend/${sessionId}`,
+            type: 'POST',
+            success: function(res) {
+                let html = res.recommendations;
+                if (typeof marked !== 'undefined') html = marked.parse(html);
+                $('#recommendations').html(`<div class="prose prose-invert max-w-none text-gray-300">${html}</div>`).show();
+                $(this).prop('disabled', false).html('<i class="fas fa-robot"></i> Get Gemini Recommendations');
+            }.bind(this),
+            error: function() {
+                alert('Failed to get recommendations');
+                $(this).prop('disabled', false).html('<i class="fas fa-robot"></i> Get Gemini Recommendations');
+            }.bind(this)
+        });
+    });
+
+    function addChatMessage(role, text) {
+        let formatted = formatMarkdown(text);
+        let alignClass = role === 'user' ? 'justify-end' : 'justify-start';
+        let bgClass = role === 'user' ? 'bg-blue-600' : 'bg-gray-800';
+        let msgDiv = `<div class="chat-message flex ${alignClass} mb-4">
+                        <div class="${bgClass} rounded-2xl px-4 py-2 max-w-[75%]">${formatted}</div>
+                      </div>`;
+        $('#chatMessages').append(msgDiv);
+        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    }
+
+    function addLoadingSpinner() {
+        $('#chatSpinner').remove();
+        let spinnerDiv = `<div id="chatSpinner" class="chat-message flex justify-start mb-4">
+                            <div class="bg-gray-800 rounded-2xl px-4 py-2"><i class="fas fa-spinner fa-spin"></i> Thinking...</div>
+                          </div>`;
+        $('#chatMessages').append(spinnerDiv);
+        $('#chatMessages').scrollTop($('#chatMessages')[0].scrollHeight);
+    }
+
+    function removeLoadingSpinner() {
+        $('#chatSpinner').remove();
+    }
+
+    $('#sendChatBtn').click(function() {
+        let msg = $('#chatInput').val().trim();
+        if (!msg) return;
+        if (!sessionId) { addChatMessage('assistant', 'Please upload data first.'); return; }
+        addChatMessage('user', msg);
+        $('#chatInput').val('');
+        addLoadingSpinner();
+        let fd = new FormData();
+        fd.append('message', msg);
+        $.ajax({
+            url: `/chat/${sessionId}`,
+            type: 'POST',
+            data: fd,
+            processData: false,
+            contentType: false,
+            timeout: 60000,
+            success: function(res) {
+                removeLoadingSpinner();
+                addChatMessage('assistant', res.reply);
+            },
+            error: function(xhr) {
+                removeLoadingSpinner();
+                let errMsg = xhr.status === 408 ? 'Request timeout. Try again.' : 'Error: Could not reach AI service.';
+                addChatMessage('assistant', errMsg);
+            }
+        });
+    });
+
+    $('#chatInput').keypress(function(e) { if (e.which === 13) $('#sendChatBtn').click(); });
+
+    // Tab switching
+    $('.tab-btn').click(function() {
+        let tab = $(this).data('tab');
+        $('.tab-btn').removeClass('bg-blue-600/30 text-white').addClass('bg-white/5 text-gray-300');
+        $(this).addClass('bg-blue-600/30 text-white');
+        $('.tab-content').addClass('hidden');
+        $(`#tab-${tab}`).removeClass('hidden');
+        if (tab === 'track' && storedPlots && !plotsRendered) {
+            setTimeout(renderPlots, 50);
+        }
+    });
+
+    // Initialize active tab style
+    $('.tab-btn[data-tab="track"]').addClass('bg-blue-600/30 text-white');
+</script>
+</body>
+</html>

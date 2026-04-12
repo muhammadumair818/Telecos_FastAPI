@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>AI Co-Pilot for Telco Towers Intelligence</title>
+    <!-- Tailwind CSS + Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- External libraries -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.18.0.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="icon" type="image/png" href="/static/tecohublogo.png">
+</head>
+<body class="text-gray-200 antialiased bg-gradient-to-br from-[#0b1220] via-[#0f172a] to-black">
+    <div class="fixed inset-0 -z-10 bg-gradient-to-br from-blue-900/20 via-purple-900/10 to-black blur-2xl"></div>
+
+    <div class="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 space-y-8">
+        <!-- Header -->
+        <div class="glass-card rounded-2xl p-5 flex flex-wrap justify-between items-center mb-8 border border-white/10">
+            <div class="flex items-center gap-5">
+                <div class="w-20 h-20 md:w-24 md:h-24 flex items-center justify-center rounded-xl bg-white/5 shadow-md">
+                    <img src="/static/tecohublogo.png" class="h-12 md:h-16 lg:h-20 object-contain">
+                </div>
+                <div>
+                    <h1 class="text-2xl md:text-4xl font-black text-white tracking-tight">Productix Analytics Suite</h1>
+                    <p class="text-sm md:text-base text-blue-400 font-medium">AI Co-Pilot for Telco Towers Intelligence</p>
+                    <p class="text-xs text-gray-400 mt-1">Real-time KPI Monitoring • Predictive Analytics • Operational Optimization</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4 mt-4 md:mt-0">
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Platform</p>
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">v1.0 Enterprise</span>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">System</p>
+                    <span class="px-4 py-1 rounded-full text-xs font-bold bg-green-500/10 text-green-400 border border-green-500/20 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> AI Active
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="glass-card rounded-2xl p-6 md:p-8 text-center mb-8">
+            <div class="text-6xl mb-4">📊</div>
+            <h3 class="text-2xl md:text-3xl font-extrabold text-white mb-2">Upload & Analyze Your Data</h3>
+            <p class="text-gray-400 text-sm mb-6 max-w-xl mx-auto">Drag & drop your dataset or browse files to generate KPIs, forecasts, and AI-driven insights instantly.</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="flex flex-col items-center gap-4">
+                    <input type="file" id="fileInput" name="file" accept=".csv,.xlsx" hidden>
+                    <button type="button" class="px-6 py-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition flex items-center gap-2" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-upload"></i> Choose File
+                    </button>
+                    <button type="submit" class="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:scale-105 transition transform shadow-xl font-semibold flex items-center gap-2">
+                        🚀 Analysis
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading -->
+        <div id="loading" class="text-center py-12 hidden">
+            <div class="inline-block w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin"></div>
+            <p class="mt-3 text-gray-400">Processing your data with AI...</p>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results" class="hidden">
+            <!-- Tabs -->
+            <div class="flex flex-wrap gap-3 mb-6">
+                <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="track"><i class="fas fa-chart-simple mr-1"></i> Track</button>
+                <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="predict"><i class="fas fa-brain mr-1"></i> Predict</button>
+                <button class="tab-btn px-6 py-2 rounded-full bg-white/5 backdrop-blur text-gray-300 font-medium hover:bg-blue-600/30 transition" data-tab="action"><i class="fas fa-comment-dots mr-1"></i> Action & AI</button>
+            </div>
+
+            <!-- Track Tab -->
+            <div id="tab-track" class="tab-content glass-card rounded-2xl p-5 md:p-6">
+                <!-- Smart Filters Panel -->
+                <div class="glass-card p-4 mb-6 rounded-xl border border-white/10">
+                    <h4 class="text-md font-semibold mb-3 text-white">🔍 Smart Filters</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Time Range</label>
+                            <select id="filter_time" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-gray-700 text-white text-sm">
+                                <option value="ALL" selected>All Date</option>
+                                <option value="1D">Last 1 Day</option>
+                                <option value="1W">Last 1 Week</option>
+                                <option value="1M">Last 1 Month</option>
+                                <option value="1Y">Last 1 Year</option>
+                                <option value="CUSTOM">Custom Range</option>
+                            </select>
+                            <div id="custom_date_range" class="mt-2 flex gap-2" style="display: none;">
+                                <input type="date" id="start_date" class="w-1/2 px-2 py-1 rounded bg-black/40 border border-gray-700 text-white text-sm">
+                                <input type="date" id="end_date" class="w-1/2 px-2 py-1 rounded bg-black/40 border border-gray-700 text-white text-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Factory</label>
+                            <select id="filter_factory" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-gray-700 text-white text-sm">
+                                <option value="">All Factories</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Shift</label>
+                            <select id="filter_shift" class="w-full px-3 py-2 rounded-lg bg-black/40 border border-gray-700 text-white text-sm">
+                                <option value="">All Shifts</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button id="applyFiltersBtn" class="mt-4 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 transition text-sm font-semibold">
+                        <i class="fas fa-filter mr-1"></i> Apply Filters
+                    </button>
+                </div>
+
+                <!-- Filtered KPIs -->
+                <h3 class="text-xl font-semibold mb-3">📈 Filtered KPIs</h3>
+                <div id="filteredKpis" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8"></div>
+
+                <!-- Filtered Charts -->
+                <h3 class="text-xl font-semibold mb-3">📊 Filtered Visual Analytics</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-black/30 rounded-xl p-3"><div id="filter_line_chart" class="plot-container" style="min-height: 350px;"></div></div>
+                    <div class="bg-black/30 rounded-xl p-3"><div id="filter_stacked_bar" class="plot-container" style="min-height: 350px;"></div></div>
+                    <div class="bg-black/30 rounded-xl p-3"><div id="filter_heatmap" class="plot-container" style="min-height: 350px;"></div></div>
+                    <div class="bg-black/30 rounded-xl p-3"><div id="filter_pie" class="plot-container" style="min-height: 350px;"></div></div>
+                </div>
+
+                <!-- Original unfiltered plots -->
+                <h3 class="text-xl font-semibold mt-8 mb-3">📊 Full Dataset Visual Analytics</h3>
+                <div id="plots" class="space-y-6"></div>
+            </div>
+
+            <!-- Predict Tab -->
+            <div id="tab-predict" class="tab-content glass-card rounded-3xl p-6 hidden">
+                <!-- Forecast horizon selector -->
+                <div class="mb-6 p-4 glass-card rounded-xl border border-white/10">
+                    <h4 class="text-md font-semibold mb-3 flex items-center gap-2"><i class="fas fa-calendar-alt text-purple-400"></i> Forecast Horizon</h4>
+                    <div class="flex flex-wrap gap-4 items-end">
+                        <div>
+                            <label class="text-xs text-gray-400 block mb-1">Days Ahead</label>
+                            <select id="forecast_days" class="p-2 rounded-lg bg-black/40 border border-gray-700 text-white">
+                                <option value="1">1 Day</option>
+                                <option value="7" selected>7 Days</option>
+                                <option value="30">30 Days</option>
+                                <option value="90">90 Days</option>
+                            </select>
+                        </div>
+                        <button id="forecastBtn" class="px-5 py-2 rounded-lg bg-purple-600 hover:bg-purple-500 transition text-sm font-semibold">Generate Forecast</button>
+                    </div>
+                    <div id="forecastChart" class="mt-4 plot-container" style="min-height: 300px;"></div>
+                </div>
+
+                <!-- ML Cards -->
+                <div class="flex items-center gap-3 mb-8 border-b border-white/10 pb-4">
+                    <div class="p-3 bg-blue-600/20 rounded-2xl text-blue-400 shadow-inner"><i class="fas fa-brain text-2xl"></i></div>
+                    <div><h3 class="text-2xl font-black text-white tracking-tight">AI Predictive Modeling</h3><p class="text-xs text-gray-500 font-medium uppercase tracking-widest">Multi-Model Operational Forecasting</p></div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Revenue Model Card -->
+                    <div class="bg-black/40 border border-blue-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+                        <div>
+                            <div class="flex justify-between items-start mb-6"><span class="p-2 bg-blue-500/20 rounded-lg text-blue-400 text-xs font-bold uppercase tracking-tighter">Linear Regression</span><i class="fas fa-sack-dollar text-gray-700 text-xl"></i></div>
+                            <h4 class="text-lg font-bold text-white mb-4">Revenue Forecast</h4>
+                            <div class="space-y-3 mb-6">
+                                <input type="number" id="rev_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                                <input type="number" id="rev_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                                <input type="number" id="rev_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-blue-500 transition">
+                            </div>
+                        </div>
+                        <button id="btnRev" class="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Revenue</button>
+                        <div id="resRev" class="text-center p-4 bg-blue-500/10 rounded-2xl border border-blue-500/20 hidden"><p class="text-[10px] text-blue-400 font-bold uppercase mb-1">Expected Revenue</p><div class="text-2xl font-black text-white" id="valRev">$0.00</div></div>
+                    </div>
+                    <!-- Cost Model Card -->
+                    <div class="bg-black/40 border border-purple-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+                        <div>
+                            <div class="flex justify-between items-start mb-6"><span class="p-2 bg-purple-500/20 rounded-lg text-purple-400 text-xs font-bold uppercase tracking-tighter">OPEX Forecasting</span><i class="fas fa-file-invoice-dollar text-gray-700 text-xl"></i></div>
+                            <h4 class="text-lg font-bold text-white mb-4">Cost Prediction</h4>
+                            <div class="space-y-3 mb-6">
+                                <input type="number" id="cost_diesel" placeholder="Diesel Liters" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                                <input type="number" id="cost_kwh" placeholder="Electricity (kWh)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                                <input type="number" id="cost_maint" placeholder="Maintenance Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-purple-500 transition">
+                            </div>
+                        </div>
+                        <button id="btnCost" class="w-full py-4 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Predict Cost</button>
+                        <div id="resCost" class="text-center p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 hidden"><p class="text-[10px] text-purple-400 font-bold uppercase mb-1">Total OPEX Forecast</p><div class="text-2xl font-black text-white" id="valCost">$0.00</div></div>
+                    </div>
+                    <!-- Classification Model Card -->
+                    <div class="bg-black/40 border border-green-500/20 rounded-3xl p-6 flex flex-col justify-between shadow-2xl">
+                        <div>
+                            <div class="flex justify-between items-start mb-6"><span class="p-2 bg-green-500/20 rounded-lg text-green-400 text-xs font-bold uppercase tracking-tighter">Random Forest</span><i class="fas fa-shield-virus text-gray-700 text-xl"></i></div>
+                            <h4 class="text-lg font-bold text-white mb-4">Productivity Label</h4>
+                            <div class="space-y-3 mb-6">
+                                <input type="number" id="clf_tenants" placeholder="Active Tenants" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                                <input type="number" id="clf_energy" placeholder="Energy Cost ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                                <input type="number" id="clf_opex" placeholder="Total OPEX ($)" class="w-full px-4 py-3 rounded-xl bg-white/5 border border-gray-800 text-white text-sm outline-none focus:border-green-500 transition">
+                            </div>
+                        </div>
+                        <button id="btnClf" class="w-full py-4 rounded-2xl bg-green-600 hover:bg-green-500 text-white font-black text-sm uppercase tracking-widest transition shadow-lg mb-4">Classify Asset</button>
+                        <div id="resClf" class="text-center p-4 bg-green-500/10 rounded-2xl border border-green-500/20 hidden"><p class="text-[10px] text-green-400 font-bold uppercase mb-1">Performance Category</p><div class="text-2xl font-black text-white" id="valClf">-</div></div>
+                    </div>
+                </div>
+                <div id="mlScores" class="mt-10 pt-6 border-t border-white/5"></div>
+            </div>
+
+            <!-- Action & AI Tab (unchanged) -->
+            <div id="tab-action" class="tab-content glass-card rounded-2xl p-5 md:p-6 hidden">
+                <div class="flex flex-wrap justify-between items-center mb-5">
+                    <button id="getRecommendationsBtn" class="px-6 py-2 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 transition shadow-md"><i class="fas fa-robot"></i> Get Gemini Recommendations</button>
+                </div>
+                <div id="recommendations" class="bg-black/30 rounded-xl p-4 hidden"></div>
+                <div class="mt-6">
+                    <div class="chat-container bg-black/30 rounded-2xl overflow-hidden border border-gray-800">
+                        <div id="chatMessages" class="h-96 overflow-y-auto p-4 space-y-4"></div>
+                        <div class="flex p-3 bg-black/40 border-t border-gray-800">
+                            <input type="text" id="chatInput" placeholder="Ask about your data..." class="flex-1 px-4 py-2 rounded-full bg-black/50 border border-gray-700 focus:border-blue-500 outline-none text-white">
+                            <button id="sendChatBtn" class="ml-3 px-5 py-2 rounded-full bg-blue-600 hover:bg-blue-500 transition"><i class="fas fa-paper-plane"></i> Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Capabilities Section -->
+        <div class="bg-black/40 p-5 rounded-xl border border-white/5 hover:scale-105 transition">
+            <h4 class="text-lg font-semibold text-white mb-6">🚀 Platform Capabilities</h4>
+            <div class="grid md:grid-cols-4 gap-6 text-sm">
+                <div class="bg-black/30 p-4 rounded-xl"><p class="font-semibold text-white mb-1">KPI Engine</p><p class="text-gray-400">Automated metric computation</p></div>
+                <div class="bg-black/30 p-4 rounded-xl"><p class="font-semibold text-white mb-1">Visualization</p><p class="text-gray-400">Interactive Plotly dashboards</p></div>
+                <div class="bg-black/30 p-4 rounded-xl"><p class="font-semibold text-white mb-1">Machine Learning</p><p class="text-gray-400">Revenue, cost & classification models</p></div>
+                <div class="bg-black/30 p-4 rounded-xl"><p class="font-semibold text-white mb-1">AI Assistant</p><p class="text-gray-400">Gemini-powered insights & chat</p></div>
+            </div>
+        </div>
+
+        <!-- About Section -->
+        <div class="mt-12 glass-card rounded-2xl p-6 text-center">
+            <h3 class="text-xl font-bold mb-2"><i class="fas fa-info-circle"></i> About This Platform</h3>
+            <p class="text-gray-400 max-w-2xl mx-auto">Powered by FastAPI, Pandas, Plotly, Scikit-learn, and Google Gemini AI. Analyzes telecom tower data to deliver KPIs, trends, ML predictions, and AI-driven insights.</p>
+            <div class="flex flex-wrap justify-center gap-6 mt-6">
+                <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-chart-line text-blue-400 mr-2"></i> Real-time KPIs</div>
+                <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-robot text-purple-400 mr-2"></i> Gemini AI Chat</div>
+                <div class="bg-black/30 rounded-xl px-5 py-3"><i class="fas fa-brain text-green-400 mr-2"></i> ML Predictions</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

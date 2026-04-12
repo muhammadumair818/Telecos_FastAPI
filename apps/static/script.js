@@ -5,15 +5,23 @@ let sessionId = null;
 let storedPlots = null;
 let plotsRendered = false;
 
+// --- Markdown formatting ---
 function formatMarkdown(text) {
     if (typeof marked !== 'undefined') return marked.parse(text);
     return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
 }
 
-document.getElementById('fileInput').addEventListener('change', function(e) {
-    document.getElementById('fileName').textContent = e.target.files[0]?.name || 'No file chosen';
-});
+// --- File name display (safe if element missing) ---
+const fileNameSpan = document.getElementById('fileName');
+if (fileNameSpan) {
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+        fileNameSpan.textContent = e.target.files[0]?.name || 'No file chosen';
+    });
+} else {
+    document.getElementById('fileInput').addEventListener('change', function(e) {});
+}
 
+// --- Upload & initial analysis ---
 $('#uploadForm').on('submit', function(e) {
     e.preventDefault();
     const file = $('#fileInput')[0].files[0];
@@ -41,6 +49,11 @@ $('#uploadForm').on('submit', function(e) {
             displayMLScores(data);
             $('#chatMessages').html('<div class="chat-message assistant flex"><div class="bg-gray-800 rounded-2xl px-4 py-2 max-w-[75%]">✅ Data loaded! Ask me about your tower data.</div></div>');
             $('#recommendations').hide();
+
+            // Populate filter dropdowns (factories, shifts) from the dataset
+            populateFilters();
+            // Apply default filters (full dataset) to populate filtered sections
+            applyFilters();
         },
         error: function(xhr) {
             $('#loading').hide();
@@ -49,6 +62,7 @@ $('#uploadForm').on('submit', function(e) {
     });
 });
 
+// --- Original KPIs display (used for unfiltered data) ---
 function displayKPIs(kpis) {
     let html = '';
     for (let [k, v] of Object.entries(kpis)) {
@@ -63,6 +77,22 @@ function displayKPIs(kpis) {
     $('#kpis').html(html);
 }
 
+// --- Filtered KPIs display (separate container) ---
+function displayFilteredKPIs(kpis) {
+    let html = '';
+    for (let [k, v] of Object.entries(kpis)) {
+        let val = (typeof v === 'number') ? v.toFixed(2) : v;
+        if (k.includes('Revenue') || k.includes('Cost') || k.includes('Profit')) val = '$' + val;
+        if (k.includes('Utilization')) val = (v * 100).toFixed(1) + '%';
+        html += `<div class="bg-black/30 backdrop-blur rounded-xl p-4 text-center border border-gray-800 hover:border-blue-500/50 transition">
+                    <div class="text-xs text-gray-400 uppercase tracking-wider">${k}</div>
+                    <div class="text-2xl font-bold text-white mt-1">${val}</div>
+                </div>`;
+    }
+    $('#filteredKpis').html(html);
+}
+
+// --- Render stored plots (existing) ---
 function renderPlots() {
     if (!storedPlots) return;
     let container = $('#plots');
@@ -85,6 +115,7 @@ function renderPlots() {
     plotsRendered = true;
 }
 
+// --- ML model performance (existing) ---
 function displayMLScores(data) {
     let html = '<div class="bg-black/30 rounded-xl p-4"><strong class="text-blue-400">🤖 Model Performance</strong><br>';
     if (data.rev_score) html += `Revenue Model R²: ${data.rev_score.toFixed(4)}<br>`;
@@ -94,7 +125,7 @@ function displayMLScores(data) {
     $('#mlScores').html(html);
 }
 
-// Revenue Prediction
+// --- Revenue Prediction ---
 $('#btnRev').click(function() {
     if (!sessionId) { alert('Upload data first'); return; }
     let fd = new FormData();
@@ -115,7 +146,7 @@ $('#btnRev').click(function() {
     });
 });
 
-// Cost Prediction – uses separate endpoint if available, otherwise alert
+// --- Cost Prediction ---
 $('#btnCost').click(function() {
     if (!sessionId) { alert('Upload data first'); return; }
     let fd = new FormData();
@@ -138,7 +169,7 @@ $('#btnCost').click(function() {
     });
 });
 
-// Classification
+// --- Classification ---
 $('#btnClf').click(function() {
     if (!sessionId) { alert('Upload data first'); return; }
     let fd = new FormData();
@@ -159,7 +190,7 @@ $('#btnClf').click(function() {
     });
 });
 
-// AI Recommendations
+// --- AI Recommendations ---
 $('#getRecommendationsBtn').click(function() {
     if (!sessionId) { alert('Please upload data first'); return; }
     $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Generating...');
@@ -179,7 +210,7 @@ $('#getRecommendationsBtn').click(function() {
     });
 });
 
-// Chat
+// --- Chat functions ---
 function addChatMessage(role, text) {
     let formatted = formatMarkdown(text);
     let alignClass = role === 'user' ? 'justify-end' : 'justify-start';
@@ -234,7 +265,7 @@ $('#sendChatBtn').click(function() {
 
 $('#chatInput').keypress(function(e) { if (e.which === 13) $('#sendChatBtn').click(); });
 
-// Tab switching
+// --- Tab switching ---
 $('.tab-btn').click(function() {
     let tab = $(this).data('tab');
     $('.tab-btn').removeClass('bg-blue-600/30 text-white').addClass('bg-white/5 text-gray-300');
@@ -248,3 +279,167 @@ $('.tab-btn').click(function() {
 
 // Initialize active tab style
 $('.tab-btn[data-tab="track"]').addClass('bg-blue-600/30 text-white');
+
+// ========== DYNAMIC FILTERS ==========
+// Populate factory and shift dropdowns from the dataset
+function populateFilters() {
+    if (!sessionId) return;
+    $.ajax({
+        url: `/filter_options/${sessionId}`,
+        type: 'GET',
+        success: function(data) {
+            let factorySelect = $('#filter_factory');
+            factorySelect.empty();
+            factorySelect.append('<option value="">All Factories</option>');
+            if (data.factories && Array.isArray(data.factories)) {
+                data.factories.forEach(f => factorySelect.append(`<option value="${f}">${f}</option>`));
+            }
+            let shiftSelect = $('#filter_shift');
+            shiftSelect.empty();
+            shiftSelect.append('<option value="">All Shifts</option>');
+            if (data.shifts && Array.isArray(data.shifts)) {
+                data.shifts.forEach(s => shiftSelect.append(`<option value="${s}">${s}</option>`));
+            }
+        },
+        error: function() {
+            console.warn('Could not load filter options');
+        }
+    });
+}
+
+// Show/hide custom date range inputs based on time range selection
+$('#filter_time').change(function() {
+    if ($(this).val() === 'CUSTOM') {
+        $('#custom_date_range').show();
+    } else {
+        $('#custom_date_range').hide();
+    }
+});
+
+// ----- Apply filters (can be called on button click or automatically) -----
+function applyFilters() {
+    if (!sessionId) return;
+    let fd = new FormData();
+    fd.append('session_id', sessionId);
+
+    // Time range
+    let timeVal = $('#filter_time').val();
+    let startDate = null, endDate = null;
+    if (timeVal === 'CUSTOM') {
+        startDate = $('#start_date').val();
+        endDate = $('#end_date').val();
+    } else if (timeVal !== 'ALL') {
+        let end = new Date();
+        let start = new Date();
+        if (timeVal === '1D') start.setDate(end.getDate() - 1);
+        else if (timeVal === '1W') start.setDate(end.getDate() - 7);
+        else if (timeVal === '1M') start.setMonth(end.getMonth() - 1);
+        else if (timeVal === '1Y') start.setFullYear(end.getFullYear() - 1);
+        startDate = start.toISOString().split('T')[0];
+        endDate = end.toISOString().split('T')[0];
+    }
+    if (startDate && endDate) {
+        fd.append('date_range_start', startDate);
+        fd.append('date_range_end', endDate);
+    }
+
+    // Factory and shift
+    let factory = $('#filter_factory').val();
+    if (factory) fd.append('factory', factory);
+    let shift = $('#filter_shift').val();
+    if (shift) fd.append('shift', shift);
+
+    $('#loading').show();
+    $.ajax({
+        url: '/filter',
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(res) {
+            $('#loading').hide();
+            if (res.kpis) displayFilteredKPIs(res.kpis);
+            // Update charts
+            if (res.line_chart) {
+                let fig = JSON.parse(res.line_chart);
+                Plotly.newPlot('filter_line_chart', fig.data, fig.layout, {responsive: true});
+            }
+            if (res.stacked_bar) {
+                let fig = JSON.parse(res.stacked_bar);
+                Plotly.newPlot('filter_stacked_bar', fig.data, fig.layout, {responsive: true});
+            }
+            if (res.heatmap) {
+                let fig = JSON.parse(res.heatmap);
+                Plotly.newPlot('filter_heatmap', fig.data, fig.layout, {responsive: true});
+            }
+            if (res.pie_energy) {
+                let fig = JSON.parse(res.pie_energy);
+                Plotly.newPlot('filter_pie', fig.data, fig.layout, {responsive: true});
+            }
+        },
+        error: function(xhr) {
+            $('#loading').hide();
+            alert('Filter error: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        }
+    });
+}
+
+// Attach click handler to Apply Filters button
+$('#applyFiltersBtn').click(function() {
+    applyFilters();
+});
+
+// ========== FORECAST IN PREDICT TAB ==========
+$('#forecastBtn').click(function() {
+    if (!sessionId) { alert('Please upload data first'); return; }
+    let days = $('#forecast_days').val();
+    let fd = new FormData();
+    fd.append('session_id', sessionId);
+    fd.append('days', days);
+    $('#loading').show();
+    $.ajax({
+        url: `/forecast/${sessionId}`,
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        success: function(res) {
+            $('#loading').hide();
+            // Backend returns { future_dates, future_pred, total_next_month }
+            // Transform to predictions array
+            let predictions = [];
+            if (res.future_pred && Array.isArray(res.future_pred)) {
+                predictions = res.future_pred.map((value, idx) => ({ day: idx + 1, value: value }));
+            } else if (res.predictions) {
+                predictions = res.predictions;
+            } else {
+                alert('Forecast data format not recognized');
+                return;
+            }
+            let x = predictions.map(p => p.day);
+            let y = predictions.map(p => p.value);
+            let trace = {
+                x: x,
+                y: y,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Forecasted Cost',
+                line: { color: '#8b5cf6', width: 2 },
+                marker: { size: 6, color: '#c084fc' }
+            };
+            let layout = {
+                title: `Cost Forecast (${days} Days)`,
+                xaxis: { title: 'Days ahead', gridcolor: '#334155' },
+                yaxis: { title: 'Cost ($)', gridcolor: '#334155' },
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                font: { color: '#cbd5e1' }
+            };
+            Plotly.newPlot('forecastChart', [trace], layout, {responsive: true});
+        },
+        error: function(xhr) {
+            $('#loading').hide();
+            alert('Forecast error: ' + (xhr.responseJSON?.detail || 'Unknown error'));
+        }
+    });
+});
